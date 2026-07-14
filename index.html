@@ -1,282 +1,449 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Apex Athletes | Players Management Dashboard</title>
     <!-- Fonts and Icons -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/src/styles.css">
-</head>
-<body>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
     <!-- Background elements for ambient glow effect -->
     <div class="ambient-glow glow-1"></div>
     <div class="ambient-glow glow-2"></div>
 
     <div class="app-container">
-        <!-- Navigation Header -->
-        <header class="main-header">
-            <div class="logo-section">
-                <div class="logo-icon">
-                    <i class="fa-solid fa-ranking-star"></i>
-                </div>
-                <div class="logo-text">
-                    <h1>APEX<span>ATHLETES</span></h1>
-                    <p>Performance Dashboard</p>
-                </div>
-            </div>
-            
-            <div class="header-actions">
-                <div class="admin-status-bar" id="adminStatusBar">
-                    <span class="status-badge public-badge"><i class="fa-solid fa-eye"></i> Public View</span>
-                </div>
-                <button class="btn btn-primary" id="authBtn">
-                    <i class="fa-solid fa-lock"></i> <span>Manager Login</span>
-                </button>
-            </div>
-        </header>
+      <!-- Navigation Header -->
+      <header class="main-header">
+        <div class="logo-section">
+          <div class="logo-icon">
+            <i class="fa-solid fa-ranking-star"></i>
+          </div>
+          <div class="logo-text">
+            <h1>APEX<span>ATHLETES</span></h1>
+            <p>Performance Dashboard</p>
+          </div>
+        </div>
 
-        <!-- Stats Overview Banner -->
-        <section class="stats-overview">
-            <div class="stat-card">
-                <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
-                <div class="stat-info">
-                    <span class="stat-label">Total Roster</span>
-                    <h3 class="stat-value" id="statTotal">0</h3>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon text-active"><i class="fa-solid fa-circle-check"></i></div>
-                <div class="stat-info">
-                    <span class="stat-label">Active Players</span>
-                    <h3 class="stat-value" id="statActive">0</h3>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon text-avg"><i class="fa-solid fa-gauge-high"></i></div>
-                <div class="stat-info">
-                    <span class="stat-label">Average OVR</span>
-                    <h3 class="stat-value" id="statAvgRating">0</h3>
-                </div>
-            </div>
-        </section>
+        <div class="header-actions">
+          <div class="admin-status-bar" id="adminStatusBar">
+            <span class="status-badge public-badge"
+              ><i class="fa-solid fa-eye"></i> Public View</span
+            >
+          </div>
+          <button class="btn btn-primary" id="authBtn">
+            <i class="fa-solid fa-lock"></i> <span>Admin Login</span>
+          </button>
+        </div>
+      </header>
 
-        <!-- Search and Filters Section -->
-        <section class="filters-bar">
-            <div class="search-box">
-                <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                <input type="text" id="searchInput" placeholder="Search players by name, nationality...">
-            </div>
-            
-            <div class="filter-controls">
-                <div class="select-wrapper">
-                    <select id="positionFilter">
-                        <option value="">All Positions</option>
-                        <option value="Goalkeeper">Goalkeeper</option>
-                        <option value="Defender">Defender</option>
-                        <option value="Midfielder">Midfielder</option>
-                        <option value="Forward">Forward</option>
-                    </select>
-                </div>
-                <div class="select-wrapper">
-                    <select id="statusFilter">
-                        <option value="">All Statuses</option>
-                        <option value="Active">Active</option>
-                        <option value="Injured">Injured</option>
-                        <option value="Suspended">Suspended</option>
-                    </select>
-                </div>
-                <button class="btn btn-secondary btn-icon" id="resetFilters" title="Reset Filters">
-                    <i class="fa-solid fa-rotate-right"></i>
-                </button>
-                <button class="btn btn-success btn-with-icon" id="addPlayerBtn" style="display: none;">
-                    <i class="fa-solid fa-plus"></i> Add New Player
-                </button>
-            </div>
-        </section>
+      <!-- Stats Overview Banner -->
+      <section class="stats-overview">
+        <div class="stat-card">
+          <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
+          <div class="stat-info">
+            <span class="stat-label">Total Roster</span>
+            <h3 class="stat-value" id="statTotal">0</h3>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon text-active">
+            <i class="fa-solid fa-circle-check"></i>
+          </div>
+          <div class="stat-info">
+            <span class="stat-label">Active Players</span>
+            <h3 class="stat-value" id="statActive">0</h3>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon text-avg">
+            <i class="fa-solid fa-gauge-high"></i>
+          </div>
+          <div class="stat-info">
+            <span class="stat-label">Average OVR</span>
+            <h3 class="stat-value" id="statAvgRating">0</h3>
+          </div>
+        </div>
+      </section>
 
-        <!-- Main Content Area -->
-        <main class="players-section">
-            <div class="section-title">
-                <h2>Roster Directory</h2>
-                <span id="resultsCount">Showing 0 players</span>
-            </div>
+      <!-- Search and Filters Section -->
+      <section class="filters-bar">
+        <div class="search-box">
+          <i class="fa-solid fa-magnifying-glass search-icon"></i>
+          <input
+            type="text"
+            id="searchInput"
+            placeholder="Search players by name, nationality..."
+          />
+        </div>
 
-            <!-- Players Grid -->
-            <div class="players-grid" id="playersGrid">
-                <!-- Loading State / Dynamic Cards generated by JS -->
-                <div class="loading-state">
-                    <i class="fa-solid fa-circle-notch fa-spin"></i>
-                    <p>Loading roster...</p>
-                </div>
-            </div>
-        </main>
-        
-        <footer class="main-footer">
-            <p>&copy; 2026 Apex Athletes Inc. All rights reserved. | Deployed Static Web App Demo</p>
-        </footer>
+        <div class="filter-controls">
+          <div class="select-wrapper">
+            <select id="positionFilter">
+              <option value="">All Positions</option>
+              <option value="Goalkeeper">Goalkeeper</option>
+              <option value="Defender">Defender</option>
+              <option value="Midfielder">Midfielder</option>
+              <option value="Forward">Forward</option>
+            </select>
+          </div>
+          <div class="select-wrapper">
+            <select id="statusFilter">
+              <option value="">All Statuses</option>
+              <option value="Active">Active</option>
+              <option value="Injured">Injured</option>
+              <option value="Suspended">Suspended</option>
+            </select>
+          </div>
+          <button
+            class="btn btn-secondary btn-icon"
+            id="resetFilters"
+            title="Reset Filters"
+          >
+            <i class="fa-solid fa-rotate-right"></i>
+          </button>
+          <button
+            class="btn btn-success btn-with-icon"
+            id="addPlayerBtn"
+            style="display: none"
+          >
+            <i class="fa-solid fa-plus"></i> Add New Player
+          </button>
+        </div>
+      </section>
+
+      <!-- Main Content Area -->
+      <main class="players-section">
+        <div class="section-title">
+          <h2>Roster Directory</h2>
+          <span id="resultsCount">Showing 0 players</span>
+        </div>
+
+        <!-- Players Grid -->
+        <div class="players-grid" id="playersGrid">
+          <!-- Loading State / Dynamic Cards generated by JS -->
+          <div class="loading-state">
+            <i class="fa-solid fa-circle-notch fa-spin"></i>
+            <p>Loading roster...</p>
+          </div>
+        </div>
+      </main>
+
+      <footer class="main-footer">
+        <p>
+          &copy; 2026 Apex Athletes Inc. All rights reserved. | Deployed Static
+          Web App Demo
+        </p>
+      </footer>
     </div>
 
     <!-- Login Modal -->
     <div class="modal-backdrop" id="loginModal">
-        <div class="modal-container modal-small">
-            <div class="modal-header">
-                <h3><i class="fa-solid fa-shield-halved"></i> Administrative Login</h3>
-                <button class="close-modal" data-close="loginModal">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p class="modal-subtitle">Log in to unlock administrative dashboard actions (add, edit, delete records).</p>
-                <form id="loginForm">
-                    <div class="form-group">
-                        <label for="usernameInput">Username</label>
-                        <div class="input-icon-wrapper">
-                            <i class="fa-solid fa-user"></i>
-                            <input type="text" id="usernameInput" placeholder="Enter 'admin'" required autocomplete="username">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="passwordInput">Password</label>
-                        <div class="input-icon-wrapper">
-                            <i class="fa-solid fa-lock"></i>
-                            <input type="password" id="passwordInput" placeholder="Enter 'password123'" required autocomplete="current-password">
-                        </div>
-                    </div>
-                    <div id="loginErrorMessage" class="error-banner" style="display: none;">
-                        <i class="fa-solid fa-triangle-exclamation"></i> Invalid credentials. Please try again.
-                    </div>
-                    <div class="modal-actions">
-                        <button type="button" class="btn btn-secondary" data-close="loginModal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Authenticate</button>
-                    </div>
-                </form>
-            </div>
+      <div class="modal-container modal-small">
+        <div class="modal-header">
+          <h3>
+            <i class="fa-solid fa-shield-halved"></i> Administrative Login
+          </h3>
+          <button class="close-modal" data-close="loginModal">&times;</button>
         </div>
+        <div class="modal-body">
+          <p class="modal-subtitle">
+            Log in to unlock administrative dashboard actions (add, edit, delete
+            records).
+          </p>
+          <form id="loginForm">
+            <div class="form-group">
+              <label for="usernameInput">Username</label>
+              <div class="input-icon-wrapper">
+                <i class="fa-solid fa-user"></i>
+                <input
+                  type="text"
+                  id="usernameInput"
+                  placeholder="Enter 'admin'"
+                  required
+                  autocomplete="username"
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="passwordInput">Password</label>
+              <div class="input-icon-wrapper">
+                <i class="fa-solid fa-lock"></i>
+                <input
+                  type="password"
+                  id="passwordInput"
+                  placeholder="Enter 'password123'"
+                  required
+                  autocomplete="current-password"
+                />
+              </div>
+            </div>
+            <div
+              id="loginErrorMessage"
+              class="error-banner"
+              style="display: none"
+            >
+              <i class="fa-solid fa-triangle-exclamation"></i> Invalid
+              credentials. Please try again.
+            </div>
+            <div class="modal-actions">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-close="loginModal"
+              >
+                Cancel
+              </button>
+              <button type="submit" class="btn btn-primary">
+                Authenticate
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
 
     <!-- Add/Edit Player Modal -->
     <div class="modal-backdrop" id="playerModal">
-        <div class="modal-container">
-            <div class="modal-header">
-                <h3 id="playerModalTitle"><i class="fa-solid fa-user-plus"></i> Add Player Record</h3>
-                <button class="close-modal" data-close="playerModal">&times;</button>
-            </div>
-            <div class="modal-body">
-                <form id="playerForm">
-                    <input type="hidden" id="playerIdInput">
-                    <div class="form-row">
-                        <div class="form-group col-8">
-                            <label for="playerName">Full Name <span class="required">*</span></label>
-                            <input type="text" id="playerName" placeholder="e.g. Cristiano Ronaldo" required>
-                        </div>
-                        <div class="form-group col-4">
-                            <label for="playerNumber">Jersey # <span class="required">*</span></label>
-                            <input type="number" id="playerNumber" min="1" max="99" placeholder="7" required>
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group col-6">
-                            <label for="playerPosition">Position <span class="required">*</span></label>
-                            <select id="playerPosition" required>
-                                <option value="" disabled selected>Select Position</option>
-                                <option value="Goalkeeper">Goalkeeper</option>
-                                <option value="Defender">Defender</option>
-                                <option value="Midfielder">Midfielder</option>
-                                <option value="Forward">Forward</option>
-                            </select>
-                        </div>
-                        <div class="form-group col-6">
-                            <label for="playerStatus">Status <span class="required">*</span></label>
-                            <select id="playerStatus" required>
-                                <option value="Active">Active</option>
-                                <option value="Injured">Injured</option>
-                                <option value="Suspended">Suspended</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group col-6">
-                            <label for="playerAge">Age <span class="required">*</span></label>
-                            <input type="number" id="playerAge" min="15" max="50" placeholder="28" required>
-                        </div>
-                        <div class="form-group col-6">
-                            <label for="playerNationality">Nationality <span class="required">*</span></label>
-                            <input type="text" id="playerNationality" placeholder="e.g. Portugal" required>
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group col-6">
-                            <label for="playerRating">Overall Rating (OVR) <span class="required">*</span></label>
-                            <input type="number" id="playerRating" min="1" max="99" placeholder="85" required>
-                        </div>
-                        <div class="form-group col-6">
-                            <label for="playerImage">Image URL (Optional)</label>
-                            <input type="url" id="playerImage" placeholder="https://example.com/avatar.jpg">
-                        </div>
-                    </div>
-
-                    <div class="form-row stats-subgroup">
-                        <div class="section-divider-label">Player Stats (0-99)</div>
-                        <div class="form-group col-4">
-                            <label for="statPace" id="statLabel1">PAC / DIV</label>
-                            <input type="number" id="statPace" min="0" max="99" value="80">
-                        </div>
-                        <div class="form-group col-4">
-                            <label for="statShooting" id="statLabel2">SHO / HAN</label>
-                            <input type="number" id="statShooting" min="0" max="99" value="80">
-                        </div>
-                        <div class="form-group col-4">
-                            <label for="statPassing" id="statLabel3">PAS / KIC</label>
-                            <input type="number" id="statPassing" min="0" max="99" value="80">
-                        </div>
-                        <div class="form-group col-4 mt-2">
-                            <label for="statDribbling" id="statLabel4">DRI / REF</label>
-                            <input type="number" id="statDribbling" min="0" max="99" value="80">
-                        </div>
-                        <div class="form-group col-4 mt-2">
-                            <label for="statDefense" id="statLabel5">DEF / SPD</label>
-                            <input type="number" id="statDefense" min="0" max="99" value="80">
-                        </div>
-                        <div class="form-group col-4 mt-2">
-                            <label for="statPhysical" id="statLabel6">PHY / POS</label>
-                            <input type="number" id="statPhysical" min="0" max="99" value="80">
-                        </div>
-                    </div>
-
-                    <div class="modal-actions">
-                        <button type="button" class="btn btn-secondary" data-close="playerModal">Cancel</button>
-                        <button type="submit" class="btn btn-success" id="savePlayerBtn">Save Player</button>
-                    </div>
-                </form>
-            </div>
+      <div class="modal-container">
+        <div class="modal-header">
+          <h3 id="playerModalTitle">
+            <i class="fa-solid fa-user-plus"></i> Add Player Record
+          </h3>
+          <button class="close-modal" data-close="playerModal">&times;</button>
         </div>
+        <div class="modal-body">
+          <form id="playerForm">
+            <input type="hidden" id="playerIdInput" />
+            <div class="form-row">
+              <div class="form-group col-8">
+                <label for="playerName"
+                  >Full Name <span class="required">*</span></label
+                >
+                <input
+                  type="text"
+                  id="playerName"
+                  placeholder="e.g. Cristiano Ronaldo"
+                  required
+                />
+              </div>
+              <div class="form-group col-4">
+                <label for="playerNumber"
+                  >Jersey # <span class="required">*</span></label
+                >
+                <input
+                  type="number"
+                  id="playerNumber"
+                  min="1"
+                  max="99"
+                  placeholder="7"
+                  required
+                />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group col-6">
+                <label for="playerPosition"
+                  >Position <span class="required">*</span></label
+                >
+                <select id="playerPosition" required>
+                  <option value="" disabled selected>Select Position</option>
+                  <option value="Goalkeeper">Goalkeeper</option>
+                  <option value="Defender">Defender</option>
+                  <option value="Midfielder">Midfielder</option>
+                  <option value="Forward">Forward</option>
+                </select>
+              </div>
+              <div class="form-group col-6">
+                <label for="playerStatus"
+                  >Status <span class="required">*</span></label
+                >
+                <select id="playerStatus" required>
+                  <option value="Active">Active</option>
+                  <option value="Injured">Injured</option>
+                  <option value="Suspended">Suspended</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group col-6">
+                <label for="playerAge"
+                  >Age <span class="required">*</span></label
+                >
+                <input
+                  type="number"
+                  id="playerAge"
+                  min="15"
+                  max="50"
+                  placeholder="28"
+                  required
+                />
+              </div>
+              <div class="form-group col-6">
+                <label for="playerNationality"
+                  >Nationality <span class="required">*</span></label
+                >
+                <input
+                  type="text"
+                  id="playerNationality"
+                  placeholder="e.g. Portugal"
+                  required
+                />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group col-6">
+                <label for="playerRating"
+                  >Overall Rating (OVR) <span class="required">*</span></label
+                >
+                <input
+                  type="number"
+                  id="playerRating"
+                  min="1"
+                  max="99"
+                  placeholder="85"
+                  required
+                />
+              </div>
+              <div class="form-group col-6">
+                <label for="playerImage">Image URL (Optional)</label>
+                <input
+                  type="url"
+                  id="playerImage"
+                  placeholder="https://example.com/avatar.jpg"
+                />
+              </div>
+            </div>
+
+            <div class="form-row stats-subgroup">
+              <div class="section-divider-label">Player Stats (0-99)</div>
+              <div class="form-group col-4">
+                <label for="statPace" id="statLabel1">PAC / DIV</label>
+                <input
+                  type="number"
+                  id="statPace"
+                  min="0"
+                  max="99"
+                  value="80"
+                />
+              </div>
+              <div class="form-group col-4">
+                <label for="statShooting" id="statLabel2">SHO / HAN</label>
+                <input
+                  type="number"
+                  id="statShooting"
+                  min="0"
+                  max="99"
+                  value="80"
+                />
+              </div>
+              <div class="form-group col-4">
+                <label for="statPassing" id="statLabel3">PAS / KIC</label>
+                <input
+                  type="number"
+                  id="statPassing"
+                  min="0"
+                  max="99"
+                  value="80"
+                />
+              </div>
+              <div class="form-group col-4 mt-2">
+                <label for="statDribbling" id="statLabel4">DRI / REF</label>
+                <input
+                  type="number"
+                  id="statDribbling"
+                  min="0"
+                  max="99"
+                  value="80"
+                />
+              </div>
+              <div class="form-group col-4 mt-2">
+                <label for="statDefense" id="statLabel5">DEF / SPD</label>
+                <input
+                  type="number"
+                  id="statDefense"
+                  min="0"
+                  max="99"
+                  value="80"
+                />
+              </div>
+              <div class="form-group col-4 mt-2">
+                <label for="statPhysical" id="statLabel6">PHY / POS</label>
+                <input
+                  type="number"
+                  id="statPhysical"
+                  min="0"
+                  max="99"
+                  value="80"
+                />
+              </div>
+            </div>
+
+            <div class="modal-actions">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-close="playerModal"
+              >
+                Cancel
+              </button>
+              <button type="submit" class="btn btn-success" id="savePlayerBtn">
+                Save Player
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
 
     <!-- Confirm Delete Modal -->
     <div class="modal-backdrop" id="deleteModal">
-        <div class="modal-container modal-small">
-            <div class="modal-header">
-                <h3><i class="fa-solid fa-triangle-exclamation"></i> Delete Player Record</h3>
-                <button class="close-modal" data-close="deleteModal">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p>Are you sure you want to delete <strong id="deletePlayerName">this player</strong>? This action is permanent and cannot be undone.</p>
-                <div class="modal-actions mt-4">
-                    <button type="button" class="btn btn-secondary" data-close="deleteModal">Cancel</button>
-                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete Record</button>
-                </div>
-            </div>
+      <div class="modal-container modal-small">
+        <div class="modal-header">
+          <h3>
+            <i class="fa-solid fa-triangle-exclamation"></i> Delete Player
+            Record
+          </h3>
+          <button class="close-modal" data-close="deleteModal">&times;</button>
         </div>
+        <div class="modal-body">
+          <p>
+            Are you sure you want to delete
+            <strong id="deletePlayerName">this player</strong>? This action is
+            permanent and cannot be undone.
+          </p>
+          <div class="modal-actions mt-4">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-close="deleteModal"
+            >
+              Cancel
+            </button>
+            <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+              Delete Record
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Toast Notification System -->
     <div class="toast-container" id="toastContainer"></div>
 
     <script type="module" src="/src/app.js"></script>
-</body>
+  </body>
 </html>
