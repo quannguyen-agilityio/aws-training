@@ -4,6 +4,7 @@ node_modules/
 
 # Production output
 dist/
+*.zip
 
 # Local env files
 .env
