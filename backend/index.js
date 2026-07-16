@@ -23,6 +23,12 @@ export async function handler(event) {
 
   try {
     switch (method) {
+      case 'OPTIONS':
+        response = {
+          statusCode: 200,
+          body: JSON.stringify({ message: 'CORS preflight successful' }),
+        };
+        break;
       case 'GET':
         const scanRes = await docClient.send(
           new ScanCommand({ TableName: TABLE_NAME }),
@@ -90,6 +96,8 @@ export async function handler(event) {
     headers: {
       'Content-Type': 'application/json',
       'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'OPTIONS,GET,POST,DELETE',
+      'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token',
     },
   };
 

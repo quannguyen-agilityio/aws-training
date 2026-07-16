@@ -1,132 +1,13 @@
-// Seed data to initialize the roster if local storage is empty
-const INITIAL_PLAYERS = [
-  {
-    id: '1',
-    name: 'Cristiano Ronaldo',
-    number: 7,
-    position: 'Forward',
-    age: 39,
-    nationality: 'Portugal',
-    rating: 91,
-    status: 'Active',
-    image:
-      'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&q=80&w=400',
-    stats: {
-      pac: 88,
-      sho: 93,
-      pas: 80,
-      dri: 85,
-      def: 35,
-      phy: 78,
-    },
-  },
-  {
-    id: '2',
-    name: 'Kevin De Bruyne',
-    number: 17,
-    position: 'Midfielder',
-    age: 32,
-    nationality: 'Belgium',
-    rating: 91,
-    status: 'Active',
-    image:
-      'https://images.unsplash.com/photo-1518063319789-7217e6706b04?auto=format&fit=crop&q=80&w=400',
-    stats: {
-      pac: 72,
-      sho: 86,
-      pas: 94,
-      dri: 87,
-      def: 65,
-      phy: 78,
-    },
-  },
-  {
-    id: '3',
-    name: 'Virgil van Dijk',
-    number: 4,
-    position: 'Defender',
-    age: 32,
-    nationality: 'Netherlands',
-    rating: 89,
-    status: 'Active',
-    image:
-      'https://images.unsplash.com/photo-1543351611-58f69d7c1781?auto=format&fit=crop&q=80&w=400',
-    stats: {
-      pac: 78,
-      sho: 60,
-      pas: 71,
-      dri: 72,
-      def: 89,
-      phy: 86,
-    },
-  },
-  {
-    id: '4',
-    name: 'Alisson Becker',
-    number: 1,
-    position: 'Goalkeeper',
-    age: 31,
-    nationality: 'Brazil',
-    rating: 89,
-    status: 'Active',
-    image:
-      'https://images.unsplash.com/photo-1606167668584-78701c57f13d?auto=format&fit=crop&q=80&w=400',
-    stats: {
-      pac: 86,
-      sho: 85,
-      pas: 85,
-      dri: 89,
-      def: 54,
-      phy: 90, // (DIV, HAN, KIC, REF, SPD, POS for GK)
-    },
-  },
-  {
-    id: '5',
-    name: 'Neymar Jr',
-    number: 10,
-    position: 'Forward',
-    age: 32,
-    nationality: 'Brazil',
-    rating: 88,
-    status: 'Injured',
-    image:
-      'https://images.unsplash.com/photo-1525640788966-69bdb028aa73?auto=format&fit=crop&q=80&w=400',
-    stats: {
-      pac: 86,
-      sho: 83,
-      pas: 85,
-      dri: 92,
-      def: 37,
-      phy: 61,
-    },
-  },
-  {
-    id: '6',
-    name: 'Luka Modrić',
-    number: 10,
-    position: 'Midfielder',
-    age: 38,
-    nationality: 'Croatia',
-    rating: 87,
-    status: 'Suspended',
-    image:
-      'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&q=80&w=400',
-    stats: {
-      pac: 72,
-      sho: 76,
-      pas: 89,
-      dri: 86,
-      def: 72,
-      phy: 66,
-    },
-  },
-];
+import axios from 'axios';
+
+const API_URL = import.meta.env.VITE_API_ENDPOINT;
 
 // App State Management
 let players = [];
 let isAdmin = false;
 let editingPlayerId = null;
 let deletingPlayerId = null;
+let deletingTeamId = null;
 
 // DOM Elements
 const playersGrid = document.getElementById('playersGrid');
@@ -150,32 +31,12 @@ const addPlayerBtn = document.getElementById('addPlayerBtn');
 const playerModal = document.getElementById('playerModal');
 const playerModalTitle = document.getElementById('playerModalTitle');
 const playerForm = document.getElementById('playerForm');
-const playerIdInput = document.getElementById('playerIdInput');
+const playerIdInput = document.getElementById('playerId');
 const playerName = document.getElementById('playerName');
+const teamIdInput = document.getElementById('teamId');
 const playerNumber = document.getElementById('playerNumber');
 const playerPosition = document.getElementById('playerPosition');
 const playerStatus = document.getElementById('playerStatus');
-const playerAge = document.getElementById('playerAge');
-const playerNationality = document.getElementById('playerNationality');
-const playerRating = document.getElementById('playerRating');
-const playerImage = document.getElementById('playerImage');
-
-// Stat Labels for Goalkeeper vs Outfield
-const statLabels = [
-  document.getElementById('statLabel1'),
-  document.getElementById('statLabel2'),
-  document.getElementById('statLabel3'),
-  document.getElementById('statLabel4'),
-  document.getElementById('statLabel5'),
-  document.getElementById('statLabel6'),
-];
-
-const statPace = document.getElementById('statPace');
-const statShooting = document.getElementById('statShooting');
-const statPassing = document.getElementById('statPassing');
-const statDribbling = document.getElementById('statDribbling');
-const statDefense = document.getElementById('statDefense');
-const statPhysical = document.getElementById('statPhysical');
 
 // Delete Modal Elements
 const deleteModal = document.getElementById('deleteModal');
@@ -185,29 +46,28 @@ const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
 // Stats Overview counters
 const statTotal = document.getElementById('statTotal');
 const statActive = document.getElementById('statActive');
-const statAvgRating = document.getElementById('statAvgRating');
+const statAvgRating = document.getElementById('statAvgRating'); // We might hide or change this since rating is gone
 
 // Initialize Application
 document.addEventListener('DOMContentLoaded', () => {
   loadPlayers();
   checkAuthSession();
   setupEventListeners();
-  renderPlayers();
 });
 
-// Load players from localStorage or seed them
-function loadPlayers() {
-  const stored = localStorage.getItem('apex_roster');
-  if (stored) {
-    players = JSON.parse(stored);
-  } else {
-    players = [...INITIAL_PLAYERS];
-    savePlayersToStorage();
+// Load players from API
+async function loadPlayers() {
+  try {
+    const response = await axios.get(`${API_URL}/v1/players`);
+    // Assuming API returns an array or an object with players array
+    players = Array.isArray(response.data)
+      ? response.data
+      : response.data.players || [];
+    renderPlayers();
+  } catch (error) {
+    console.error('Error fetching players:', error);
+    showToast('Failed to load players from server', 'error');
   }
-}
-
-function savePlayersToStorage() {
-  localStorage.setItem('apex_roster', JSON.stringify(players));
 }
 
 // Session Authentication
@@ -266,7 +126,7 @@ function closeModal(modalId) {
     } else if (modalId === 'playerModal') {
       playerForm.reset();
       editingPlayerId = null;
-      updateStatLabels('Forward'); // reset default labels
+      playerIdInput.readOnly = false; // allow editing playerId for new records
     }
   }
 }
@@ -295,25 +155,6 @@ function showToast(message, type = 'success') {
       toast.remove();
     });
   }, 3000);
-}
-
-// Dynamic Stats labels depending on Goalkeeper or Outfield
-function updateStatLabels(position) {
-  if (position === 'Goalkeeper') {
-    statLabels[0].innerText = 'DIV (Diving)';
-    statLabels[1].innerText = 'HAN (Handling)';
-    statLabels[2].innerText = 'KIC (Kicking)';
-    statLabels[3].innerText = 'REF (Reflexes)';
-    statLabels[4].innerText = 'SPD (Speed)';
-    statLabels[5].innerText = 'POS (Positioning)';
-  } else {
-    statLabels[0].innerText = 'PAC (Pace)';
-    statLabels[1].innerText = 'SHO (Shooting)';
-    statLabels[2].innerText = 'PAS (Passing)';
-    statLabels[3].innerText = 'DRI (Dribbling)';
-    statLabels[4].innerText = 'DEF (Defense)';
-    statLabels[5].innerText = 'PHY (Physicality)';
-  }
 }
 
 // Event Listeners setup
@@ -376,13 +217,8 @@ function setupEventListeners() {
     playerModalTitle.innerHTML =
       '<i class="fa-solid fa-user-plus"></i> Add Player Record';
     playerForm.reset();
-    updateStatLabels('Forward');
+    playerIdInput.readOnly = false;
     openModal('playerModal');
-  });
-
-  // Player Position Change changes stats labels
-  playerPosition.addEventListener('change', (e) => {
-    updateStatLabels(e.target.value);
   });
 
   // Player Save Form Submit
@@ -392,67 +228,76 @@ function setupEventListeners() {
   });
 
   // Confirm Delete Click
-  confirmDeleteBtn.addEventListener('click', () => {
-    if (deletingPlayerId) {
-      const playerIndex = players.findIndex((p) => p.id === deletingPlayerId);
-      if (playerIndex > -1) {
-        const deletedName = players[playerIndex].name;
-        players.splice(playerIndex, 1);
-        savePlayersToStorage();
-        renderPlayers();
-        showToast(`Deleted ${deletedName} from roster.`, 'error');
+  confirmDeleteBtn.addEventListener('click', async () => {
+    if (deletingPlayerId && deletingTeamId) {
+      try {
+        await axios.delete(`${API_URL}/v1/players`, {
+          data: {
+            playerId: deletingPlayerId,
+            teamId: deletingTeamId
+          }
+        });
+        const playerIndex = players.findIndex(
+          (p) => p.playerId === deletingPlayerId && p.teamId === deletingTeamId,
+        );
+        if (playerIndex > -1) {
+          const deletedName = players[playerIndex].playerName;
+          players.splice(playerIndex, 1);
+          renderPlayers();
+          showToast(`Deleted ${deletedName} from roster.`, 'error');
+        }
+      } catch (error) {
+        console.error('Error deleting player:', error);
+        showToast('Failed to delete player', 'error');
       }
       closeModal('deleteModal');
       deletingPlayerId = null;
+      deletingTeamId = null;
     }
   });
 }
 
 // Save player (Add or Edit)
-function savePlayer() {
-  const id = editingPlayerId || Date.now().toString();
+async function savePlayer() {
   const newPlayer = {
-    id,
-    name: playerName.value.trim(),
-    number: parseInt(playerNumber.value),
+    playerId: playerIdInput.value.trim(),
+    playerName: playerName.value.trim(),
+    teamId: teamIdInput.value.trim(),
     position: playerPosition.value,
+    jerseyNumber: parseInt(playerNumber.value),
     status: playerStatus.value,
-    age: parseInt(playerAge.value),
-    nationality: playerNationality.value.trim(),
-    rating: parseInt(playerRating.value),
-    image: playerImage.value.trim() || null,
-    stats: {
-      pac: parseInt(statPace.value) || 0,
-      sho: parseInt(statShooting.value) || 0,
-      pas: parseInt(statPassing.value) || 0,
-      dri: parseInt(statDribbling.value) || 0,
-      def: parseInt(statDefense.value) || 0,
-      phy: parseInt(statPhysical.value) || 0,
-    },
   };
 
-  if (editingPlayerId) {
-    // Edit existing
-    const idx = players.findIndex((p) => p.id === editingPlayerId);
-    if (idx > -1) {
-      players[idx] = newPlayer;
-      showToast(`Updated profile for ${newPlayer.name}`, 'success');
+  try {
+    if (editingPlayerId) {
+      // Assuming PUT for edit or we can use POST for both create and update
+      // Based on instructions, we can just use POST if the API handles upsert, or you might need PUT.
+      // Using POST as mentioned in standard prompt if there is no explicit PUT.
+      await axios.post(`${API_URL}/v1/players`, newPlayer);
+      const idx = players.findIndex((p) => p.playerId === editingPlayerId);
+      if (idx > -1) {
+        players[idx] = newPlayer;
+      }
+      showToast(`Updated profile for ${newPlayer.playerName}`, 'success');
+    } else {
+      await axios.post(`${API_URL}/v1/players`, newPlayer);
+      players.push(newPlayer);
+      showToast(`Added ${newPlayer.playerName} to roster`, 'success');
     }
-  } else {
-    // Add new
-    players.push(newPlayer);
-    showToast(`Added ${newPlayer.name} to roster`, 'success');
-  }
 
-  savePlayersToStorage();
-  renderPlayers();
-  closeModal('playerModal');
+    // Refresh list from server to ensure sync
+    await loadPlayers();
+    closeModal('playerModal');
+  } catch (error) {
+    console.error('Error saving player:', error);
+    showToast('Failed to save player', 'error');
+  }
 }
 
 // Edit Player Trigger (called from dynamic element)
 window.triggerEditPlayer = function (id) {
   if (!isAdmin) return;
-  const player = players.find((p) => p.id === id);
+  const player = players.find((p) => p.playerId === id);
   if (!player) return;
 
   editingPlayerId = id;
@@ -460,35 +305,26 @@ window.triggerEditPlayer = function (id) {
     '<i class="fa-solid fa-user-pen"></i> Edit Player Record';
 
   // Populate fields
-  playerName.value = player.name;
-  playerNumber.value = player.number;
+  playerIdInput.value = player.playerId;
+  playerIdInput.readOnly = true; // prevent changing ID on edit
+  playerName.value = player.playerName;
+  teamIdInput.value = player.teamId;
+  playerNumber.value = player.jerseyNumber;
   playerPosition.value = player.position;
   playerStatus.value = player.status;
-  playerAge.value = player.age;
-  playerNationality.value = player.nationality;
-  playerRating.value = player.rating;
-  playerImage.value = player.image || '';
-
-  // Stats
-  updateStatLabels(player.position);
-  statPace.value = player.stats.pac;
-  statShooting.value = player.stats.sho;
-  statPassing.value = player.stats.pas;
-  statDribbling.value = player.stats.dri;
-  statDefense.value = player.stats.def;
-  statPhysical.value = player.stats.phy;
 
   openModal('playerModal');
 };
 
 // Delete Player Trigger (called from dynamic element)
-window.triggerDeletePlayer = function (id) {
+window.triggerDeletePlayer = function (id, teamId) {
   if (!isAdmin) return;
-  const player = players.find((p) => p.id === id);
+  const player = players.find((p) => p.playerId === id && p.teamId === teamId);
   if (!player) return;
 
   deletingPlayerId = id;
-  deletePlayerName.innerText = player.name;
+  deletingTeamId = teamId;
+  deletePlayerName.innerText = player.playerName;
   openModal('deleteModal');
 };
 
@@ -500,10 +336,14 @@ function renderPlayers() {
 
   // Filter roster
   const filtered = players.filter((player) => {
+    const pName = player.playerName || '';
+    const pTeam = player.teamId || '';
+    const pPos = player.position || '';
+
     const matchesSearch =
-      player.name.toLowerCase().includes(searchVal) ||
-      player.nationality.toLowerCase().includes(searchVal) ||
-      player.position.toLowerCase().includes(searchVal);
+      pName.toLowerCase().includes(searchVal) ||
+      pTeam.toLowerCase().includes(searchVal) ||
+      pPos.toLowerCase().includes(searchVal);
     const matchesPosition = posVal ? player.position === posVal : true;
     const matchesStatus = statusVal ? player.status === statusVal : true;
 
@@ -517,11 +357,9 @@ function renderPlayers() {
   statTotal.innerText = players.length;
   statActive.innerText = players.filter((p) => p.status === 'Active').length;
 
-  if (players.length > 0) {
-    const avg = players.reduce((sum, p) => sum + p.rating, 0) / players.length;
-    statAvgRating.innerText = Math.round(avg);
-  } else {
-    statAvgRating.innerText = '0';
+  // Hide Avg Rating since it's removed from schema, just clear it or show N/A
+  if (statAvgRating) {
+    statAvgRating.innerText = 'N/A';
   }
 
   // Render grid
@@ -538,38 +376,16 @@ function renderPlayers() {
 
   playersGrid.innerHTML = filtered
     .map((player) => {
-      const statusClass = `status-${player.status.toLowerCase()}`;
-
-      // Define statutory abbreviations for card stats
-      let label1 = 'PAC',
-        label2 = 'SHO',
-        label3 = 'PAS';
-      let label4 = 'DRI',
-        label5 = 'DEF',
-        label6 = 'PHY';
-
-      if (player.position === 'Goalkeeper') {
-        label1 = 'DIV';
-        label2 = 'HAN';
-        label3 = 'KIC';
-        label4 = 'REF';
-        label5 = 'SPD';
-        label6 = 'POS';
-      }
-
-      const imageHtml = player.image
-        ? `<img class="player-photo" src="${player.image}" alt="${player.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">`
-        : '';
-      const placeholderHtml = `<div class="player-photo-placeholder" style="${player.image ? 'display:none;' : ''}"><i class="fa-solid fa-user-ninja"></i></div>`;
+      const statusClass = `status-${player.status ? player.status.toLowerCase() : 'active'}`;
 
       // Render Action buttons if manager authenticated
       const actionControls = isAdmin
         ? `
             <div class="card-admin-actions">
-                <button class="btn btn-circle-action btn-circle-edit" onclick="triggerEditPlayer('${player.id}')" title="Edit player record">
+                <button class="btn btn-circle-action btn-circle-edit" onclick="triggerEditPlayer('${player.playerId}')" title="Edit player record">
                     <i class="fa-solid fa-pen"></i>
                 </button>
-                <button class="btn btn-circle-action btn-circle-delete" onclick="triggerDeletePlayer('${player.id}')" title="Delete player record">
+                <button class="btn btn-circle-action btn-circle-delete" onclick="triggerDeletePlayer('${player.playerId}', '${player.teamId}')" title="Delete player record">
                     <i class="fa-solid fa-trash"></i>
                 </button>
             </div>
@@ -577,54 +393,28 @@ function renderPlayers() {
         : '';
 
       return `
-            <div class="player-card" data-id="${player.id}">
+            <div class="player-card" data-id="${player.playerId}">
                 ${actionControls}
                 <div class="card-header-area">
                     <div class="player-badge-overlay">
-                        <div class="player-ovr">${player.rating}</div>
                         <div class="player-pos-short">${getPositionAbbr(player.position)}</div>
                     </div>
                     <span class="card-status-badge ${statusClass}">${player.status}</span>
                     <div class="player-photo-container">
-                        ${imageHtml}
-                        ${placeholderHtml}
+                        <div class="player-photo-placeholder"><i class="fa-solid fa-basketball"></i></div>
                     </div>
                 </div>
                 <div class="card-body-area">
                     <div class="player-identity">
                         <div class="player-name-row">
-                            <h3 class="player-card-name" title="${player.name}">${player.name}</h3>
-                            <span class="player-number-badge">#${player.number}</span>
+                            <h3 class="player-card-name" title="${player.playerName}">${player.playerName}</h3>
+                            <span class="player-number-badge">#${player.jerseyNumber}</span>
                         </div>
                         <div class="player-meta-row">
-                            <span><i class="fa-solid fa-earth-americas"></i> ${player.nationality}</span>
-                            <span><i class="fa-solid fa-calendar"></i> ${player.age} yrs</span>
+                            <span><i class="fa-solid fa-shield-halved"></i> Team: ${player.teamId}</span>
                         </div>
-                    </div>
-                    <div class="player-stats-grid">
-                        <div class="stat-mini-box">
-                            <span class="stat-mini-val">${player.stats.pac}</span>
-                            <span class="stat-mini-lbl">${label1}</span>
-                        </div>
-                        <div class="stat-mini-box">
-                            <span class="stat-mini-val">${player.stats.sho}</span>
-                            <span class="stat-mini-lbl">${label2}</span>
-                        </div>
-                        <div class="stat-mini-box">
-                            <span class="stat-mini-val">${player.stats.pas}</span>
-                            <span class="stat-mini-lbl">${label3}</span>
-                        </div>
-                        <div class="stat-mini-box">
-                            <span class="stat-mini-val">${player.stats.dri}</span>
-                            <span class="stat-mini-lbl">${label4}</span>
-                        </div>
-                        <div class="stat-mini-box">
-                            <span class="stat-mini-val">${player.stats.def}</span>
-                            <span class="stat-mini-lbl">${label5}</span>
-                        </div>
-                        <div class="stat-mini-box">
-                            <span class="stat-mini-val">${player.stats.phy}</span>
-                            <span class="stat-mini-lbl">${label6}</span>
+                        <div class="player-meta-row">
+                            <span><i class="fa-solid fa-id-card"></i> ID: ${player.playerId}</span>
                         </div>
                     </div>
                 </div>
@@ -637,15 +427,17 @@ function renderPlayers() {
 // Short abbreviations helper
 function getPositionAbbr(pos) {
   switch (pos) {
-    case 'Goalkeeper':
-      return 'GK';
-    case 'Defender':
-      return 'DF';
-    case 'Midfielder':
-      return 'MD';
-    case 'Forward':
-      return 'FW';
+    case 'PG':
+      return 'PG';
+    case 'SG':
+      return 'SG';
+    case 'SF':
+      return 'SF';
+    case 'PF':
+      return 'PF';
+    case 'C':
+      return 'C';
     default:
-      return 'PL';
+      return pos || 'PL';
   }
 }
