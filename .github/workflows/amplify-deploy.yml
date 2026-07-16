@@ -27,6 +27,8 @@ jobs:
       - name: Build Application
         working-directory: frontend
         run: npm run build
+        env:
+          VITE_API_ENDPOINT: ${{ secrets.VITE_API_ENDPOINT }}
 
       - name: Create Zip Artifact
         working-directory: frontend
