@@ -4,10 +4,12 @@ on:
   push:
     branches:
       - develop
+      - staging
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    environment: ${{ github.ref_name }}
 
     steps:
       - name: Checkout Repository
@@ -27,8 +29,6 @@ jobs:
       - name: Build Application
         working-directory: frontend
         run: npm run build
-        env:
-          VITE_API_ENDPOINT: ${{ secrets.VITE_API_ENDPOINT }}
 
       - name: Create Zip Artifact
         working-directory: frontend
@@ -45,7 +45,7 @@ jobs:
 
       - name: Deploy to AWS Amplify
         run: |
-          DEPLOYMENT_INFO=$(aws amplify create-deployment --app-id ${{ secrets.AMPLIFY_APP_ID }} --branch-name develop)
+          DEPLOYMENT_INFO=$(aws amplify create-deployment --app-id ${{ secrets.AMPLIFY_APP_ID }} --branch-name ${{ github.ref_name }})
 
           JOB_ID=$(echo $DEPLOYMENT_INFO | jq -r '.jobId')
           UPLOAD_URL=$(echo $DEPLOYMENT_INFO | jq -r '.zipUploadUrl')
@@ -54,4 +54,4 @@ jobs:
 
           curl --request PUT --upload-file frontend/dist.zip "$UPLOAD_URL"
 
-          aws amplify start-deployment --app-id ${{ secrets.AMPLIFY_APP_ID }} --branch-name develop --job-id $JOB_ID
+          aws amplify start-deployment --app-id ${{ secrets.AMPLIFY_APP_ID }} --branch-name ${{ github.ref_name }} --job-id $JOB_ID
