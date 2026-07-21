@@ -5,7 +5,9 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "build": "zip -r index.zip index.js package.json",
+    "build": "zip -r producer.zip index.js producer.js package.json node_modules && zip -r consumer.zip consumer.js package.json node_modules",
+    "build:producer": "zip -r producer.zip index.js producer.js package.json node_modules",
+    "build:consumer": "zip -r consumer.zip consumer.js package.json node_modules",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -13,6 +15,8 @@
   "license": "ISC",
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.1087.0",
+    "@aws-sdk/client-ses": "^3.1087.0",
+    "@aws-sdk/client-sqs": "^3.1087.0",
     "@aws-sdk/lib-dynamodb": "^3.1087.0"
   }
 }
