@@ -1,0 +1,38 @@
+{
+  "resourceName": "apexApi",
+  "apiName": "ApexAthletesRestApi",
+  "privacy": {
+    "auth": 1,
+    "unauth": 1,
+    "authHasAttributs": true
+  },
+  "dependsOn": [
+    {
+      "category": "function",
+      "resourceName": "syncProducerFunction",
+      "attributes": ["Name", "Arn"]
+    },
+    {
+      "category": "auth",
+      "resourceName": "apexAuth",
+      "attributes": ["UserPoolId"]
+    }
+  ],
+  "paths": [
+    {
+      "name": "/players",
+      "lambdaFunction": "syncProducerFunction",
+      "privacy": {
+        "open": true
+      }
+    },
+    {
+      "name": "/players/{playerId}",
+      "lambdaFunction": "syncProducerFunction",
+      "privacy": {
+        "private": true,
+        "authUserPool": "apexAuth"
+      }
+    }
+  ]
+}

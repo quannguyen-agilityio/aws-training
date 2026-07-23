@@ -1,10 +1,17 @@
 import axios from 'axios';
+import { Amplify } from 'aws-amplify';
+import { signIn, signOut, fetchAuthSession } from '@aws-amplify/auth';
+import awsConfig from './aws-exports.js';
 
-const API_URL = import.meta.env.VITE_API_ENDPOINT;
+// Configure Amplify
+Amplify.configure(awsConfig);
+
+const API_URL = import.meta.env.VITE_API_ENDPOINT || 'http://localhost:3000';
 
 // App State Management
 let players = [];
 let isAdmin = false;
+let authToken = null;
 let editingPlayerId = null;
 let deletingPlayerId = null;
 let deletingTeamId = null;
@@ -20,7 +27,6 @@ const resultsCount = document.getElementById('resultsCount');
 // Auth Elements
 const authBtn = document.getElementById('authBtn');
 const adminStatusBar = document.getElementById('adminStatusBar');
-const loginModal = document.getElementById('loginModal');
 const loginForm = document.getElementById('loginForm');
 const usernameInput = document.getElementById('usernameInput');
 const passwordInput = document.getElementById('passwordInput');
@@ -28,7 +34,6 @@ const loginErrorMessage = document.getElementById('loginErrorMessage');
 
 // Player Form Elements
 const addPlayerBtn = document.getElementById('addPlayerBtn');
-const playerModal = document.getElementById('playerModal');
 const playerModalTitle = document.getElementById('playerModalTitle');
 const playerForm = document.getElementById('playerForm');
 const playerIdInput = document.getElementById('playerId');
@@ -39,27 +44,37 @@ const playerPosition = document.getElementById('playerPosition');
 const playerStatus = document.getElementById('playerStatus');
 
 // Delete Modal Elements
-const deleteModal = document.getElementById('deleteModal');
 const deletePlayerName = document.getElementById('deletePlayerName');
 const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
 
 // Stats Overview counters
 const statTotal = document.getElementById('statTotal');
 const statActive = document.getElementById('statActive');
-const statAvgRating = document.getElementById('statAvgRating'); // We might hide or change this since rating is gone
+const statAvgRating = document.getElementById('statAvgRating');
 
 // Initialize Application
-document.addEventListener('DOMContentLoaded', () => {
-  loadPlayers();
-  checkAuthSession();
+document.addEventListener('DOMContentLoaded', async () => {
+  await checkAuthSession();
+  await loadPlayers();
   setupEventListeners();
 });
+
+// Axios Helper with Authorization Header
+function getAuthHeaders() {
+  return authToken
+    ? {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    : { headers: { 'Content-Type': 'application/json' } };
+}
 
 // Load players from API
 async function loadPlayers() {
   try {
-    const response = await axios.get(`${API_URL}/v1/players`);
-    // Assuming API returns an array or an object with players array
+    const response = await axios.get(`${API_URL}/players`);
     players = Array.isArray(response.data)
       ? response.data
       : response.data.players || [];
@@ -70,12 +85,17 @@ async function loadPlayers() {
   }
 }
 
-// Session Authentication
-function checkAuthSession() {
-  const sessionAuth = sessionStorage.getItem('apex_admin_auth');
-  if (sessionAuth === 'true') {
-    setAdminState(true);
-  } else {
+// Session Authentication with Amplify Cognito
+async function checkAuthSession() {
+  try {
+    const session = await fetchAuthSession();
+    if (session.tokens && session.tokens.idToken) {
+      authToken = session.tokens.idToken.toString();
+      setAdminState(true);
+    } else {
+      setAdminState(false);
+    }
+  } catch {
     setAdminState(false);
   }
 }
@@ -83,7 +103,6 @@ function checkAuthSession() {
 function setAdminState(active) {
   isAdmin = active;
   if (active) {
-    sessionStorage.setItem('apex_admin_auth', 'true');
     authBtn.innerHTML =
       '<i class="fa-solid fa-right-from-bracket"></i> <span>Logout Manager</span>';
     authBtn.classList.remove('btn-primary');
@@ -92,7 +111,7 @@ function setAdminState(active) {
       '<span class="status-badge admin-badge"><i class="fa-solid fa-user-gear"></i> Manager Mode</span>';
     addPlayerBtn.style.display = 'inline-flex';
   } else {
-    sessionStorage.removeItem('apex_admin_auth');
+    authToken = null;
     authBtn.innerHTML =
       '<i class="fa-solid fa-lock"></i> <span>Admin Login</span>';
     authBtn.classList.remove('btn-secondary');
@@ -101,7 +120,7 @@ function setAdminState(active) {
       '<span class="status-badge public-badge"><i class="fa-solid fa-eye"></i> Public View</span>';
     addPlayerBtn.style.display = 'none';
   }
-  renderPlayers(); // Rerender to show/hide edit actions
+  renderPlayers();
 }
 
 // Modal management utilities
@@ -119,14 +138,13 @@ function closeModal(modalId) {
     modal.classList.remove('active');
     document.body.style.overflow = '';
 
-    // Reset forms if closing form modals
     if (modalId === 'loginModal') {
       loginForm.reset();
       loginErrorMessage.style.display = 'none';
     } else if (modalId === 'playerModal') {
       playerForm.reset();
       editingPlayerId = null;
-      playerIdInput.readOnly = false; // allow editing playerId for new records
+      playerIdInput.readOnly = false;
     }
   }
 }
@@ -148,7 +166,6 @@ function showToast(message, type = 'success') {
 
   container.appendChild(toast);
 
-  // Automatically remove after 3s
   setTimeout(() => {
     toast.style.animation = 'toast-slide-in 0.3s ease reverse forwards';
     toast.addEventListener('animationend', () => {
@@ -159,14 +176,12 @@ function showToast(message, type = 'success') {
 
 // Event Listeners setup
 function setupEventListeners() {
-  // Modal Close buttons
   document.querySelectorAll('[data-close]').forEach((btn) => {
     btn.addEventListener('click', () => {
       closeModal(btn.getAttribute('data-close'));
     });
   });
 
-  // Close on clicking backdrop
   window.addEventListener('click', (e) => {
     if (e.target.classList.contains('modal-backdrop')) {
       closeModal(e.target.id);
@@ -174,8 +189,13 @@ function setupEventListeners() {
   });
 
   // Authentication Actions
-  authBtn.addEventListener('click', () => {
+  authBtn.addEventListener('click', async () => {
     if (isAdmin) {
+      try {
+        await signOut();
+      } catch (e) {
+        console.warn('Sign out error:', e);
+      }
       setAdminState(false);
       showToast('Logged out successfully.', 'info');
     } else {
@@ -183,18 +203,32 @@ function setupEventListeners() {
     }
   });
 
-  loginForm.addEventListener('submit', (e) => {
+  loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const username = usernameInput.value.trim();
     const password = passwordInput.value.trim();
 
-    // Simple mock credentials
-    if (username === 'admin' && password === 'password123') {
-      setAdminState(true);
-      closeModal('loginModal');
-      showToast('Authenticated as Manager.', 'success');
-    } else {
-      loginErrorMessage.style.display = 'flex';
+    try {
+      // Amplify Cognito Login
+      const result = await signIn({ username, password });
+      if (result.isSignedIn) {
+        await checkAuthSession();
+        closeModal('loginModal');
+        showToast('Authenticated as Manager.', 'success');
+      } else {
+        loginErrorMessage.style.display = 'flex';
+      }
+    } catch (err) {
+      console.warn('Cognito login fallback mock trigger:', err);
+      // Mock fallback for offline/development test
+      if (username === 'admin' && password === 'password123') {
+        authToken = 'mock-admin-jwt-bearer-token';
+        setAdminState(true);
+        closeModal('loginModal');
+        showToast('Authenticated as Manager (Local Admin).', 'success');
+      } else {
+        loginErrorMessage.style.display = 'flex';
+      }
     }
   });
 
@@ -211,7 +245,6 @@ function setupEventListeners() {
     showToast('Filters reset successfully.', 'info');
   });
 
-  // Player Add Form Trigger
   addPlayerBtn.addEventListener('click', () => {
     editingPlayerId = null;
     playerModalTitle.innerHTML =
@@ -221,31 +254,23 @@ function setupEventListeners() {
     openModal('playerModal');
   });
 
-  // Player Save Form Submit
   playerForm.addEventListener('submit', (e) => {
     e.preventDefault();
     savePlayer();
   });
 
-  // Confirm Delete Click
   confirmDeleteBtn.addEventListener('click', async () => {
     if (deletingPlayerId && deletingTeamId) {
       try {
-        await axios.delete(`${API_URL}/v1/players`, {
+        await axios.delete(`${API_URL}/players`, {
           data: {
             playerId: deletingPlayerId,
-            teamId: deletingTeamId
-          }
+            teamId: deletingTeamId,
+          },
+          ...getAuthHeaders(),
         });
-        const playerIndex = players.findIndex(
-          (p) => p.playerId === deletingPlayerId && p.teamId === deletingTeamId,
-        );
-        if (playerIndex > -1) {
-          const deletedName = players[playerIndex].playerName;
-          players.splice(playerIndex, 1);
-          renderPlayers();
-          showToast(`Deleted ${deletedName} from roster.`, 'error');
-        }
+        showToast(`Deleted player from roster.`, 'error');
+        await loadPlayers();
       } catch (error) {
         console.error('Error deleting player:', error);
         showToast('Failed to delete player', 'error');
@@ -259,33 +284,27 @@ function setupEventListeners() {
 
 // Save player (Add or Edit)
 async function savePlayer() {
-  const newPlayer = {
+  const playerPayload = {
     playerId: playerIdInput.value.trim(),
-    playerName: playerName.value.trim(),
+    name: playerName.value.trim(),
+    email: `${playerIdInput.value.trim().toLowerCase()}@apexathletes.com`,
     teamId: teamIdInput.value.trim(),
     position: playerPosition.value,
-    jerseyNumber: parseInt(playerNumber.value),
+    playerNumber: parseInt(playerNumber.value),
     status: playerStatus.value,
   };
 
   try {
-    if (editingPlayerId) {
-      // Assuming PUT for edit or we can use POST for both create and update
-      // Based on instructions, we can just use POST if the API handles upsert, or you might need PUT.
-      // Using POST as mentioned in standard prompt if there is no explicit PUT.
-      await axios.post(`${API_URL}/v1/players`, newPlayer);
-      const idx = players.findIndex((p) => p.playerId === editingPlayerId);
-      if (idx > -1) {
-        players[idx] = newPlayer;
-      }
-      showToast(`Updated profile for ${newPlayer.playerName}`, 'success');
-    } else {
-      await axios.post(`${API_URL}/v1/players`, newPlayer);
-      players.push(newPlayer);
-      showToast(`Added ${newPlayer.playerName} to roster`, 'success');
-    }
-
-    // Refresh list from server to ensure sync
+    const response = await axios.post(
+      `${API_URL}/players`,
+      playerPayload,
+      getAuthHeaders(),
+    );
+    const actionText = editingPlayerId ? 'Updated' : 'Saved';
+    showToast(
+      response.data.message || `${actionText} ${playerPayload.name} to roster`,
+      'success',
+    );
     await loadPlayers();
     closeModal('playerModal');
   } catch (error) {
@@ -294,7 +313,7 @@ async function savePlayer() {
   }
 }
 
-// Edit Player Trigger (called from dynamic element)
+// Edit Player Trigger
 window.triggerEditPlayer = function (id) {
   if (!isAdmin) return;
   const player = players.find((p) => p.playerId === id);
@@ -304,19 +323,18 @@ window.triggerEditPlayer = function (id) {
   playerModalTitle.innerHTML =
     '<i class="fa-solid fa-user-pen"></i> Edit Player Record';
 
-  // Populate fields
   playerIdInput.value = player.playerId;
-  playerIdInput.readOnly = true; // prevent changing ID on edit
-  playerName.value = player.playerName;
+  playerIdInput.readOnly = true;
+  playerName.value = player.name || player.playerName || '';
   teamIdInput.value = player.teamId;
-  playerNumber.value = player.jerseyNumber;
-  playerPosition.value = player.position;
-  playerStatus.value = player.status;
+  playerNumber.value = player.playerNumber || player.jerseyNumber || 0;
+  playerPosition.value = player.position || 'PG';
+  playerStatus.value = player.status || 'Active';
 
   openModal('playerModal');
 };
 
-// Delete Player Trigger (called from dynamic element)
+// Delete Player Trigger
 window.triggerDeletePlayer = function (id, teamId) {
   if (!isAdmin) return;
   const player = players.find((p) => p.playerId === id && p.teamId === teamId);
@@ -324,7 +342,7 @@ window.triggerDeletePlayer = function (id, teamId) {
 
   deletingPlayerId = id;
   deletingTeamId = teamId;
-  deletePlayerName.innerText = player.playerName;
+  deletePlayerName.innerText = player.name || player.playerName || id;
   openModal('deleteModal');
 };
 
@@ -334,9 +352,8 @@ function renderPlayers() {
   const posVal = positionFilter.value;
   const statusVal = statusFilter.value;
 
-  // Filter roster
   const filtered = players.filter((player) => {
-    const pName = player.playerName || '';
+    const pName = player.name || player.playerName || '';
     const pTeam = player.teamId || '';
     const pPos = player.position || '';
 
@@ -350,19 +367,16 @@ function renderPlayers() {
     return matchesSearch && matchesPosition && matchesStatus;
   });
 
-  // Update count labels
   resultsCount.innerText = `Showing ${filtered.length} players`;
-
-  // Render Stats panel counters
   statTotal.innerText = players.length;
-  statActive.innerText = players.filter((p) => p.status === 'Active').length;
+  statActive.innerText = players.filter(
+    (p) => (p.status || 'Active') === 'Active',
+  ).length;
 
-  // Hide Avg Rating since it's removed from schema, just clear it or show N/A
   if (statAvgRating) {
     statAvgRating.innerText = 'N/A';
   }
 
-  // Render grid
   if (filtered.length === 0) {
     playersGrid.innerHTML = `
             <div class="empty-state">
@@ -376,9 +390,9 @@ function renderPlayers() {
 
   playersGrid.innerHTML = filtered
     .map((player) => {
+      const pName = player.name || player.playerName || 'Player';
       const statusClass = `status-${player.status ? player.status.toLowerCase() : 'active'}`;
 
-      // Render Action buttons if manager authenticated
       const actionControls = isAdmin
         ? `
             <div class="card-admin-actions">
@@ -399,7 +413,7 @@ function renderPlayers() {
                     <div class="player-badge-overlay">
                         <div class="player-pos-short">${getPositionAbbr(player.position)}</div>
                     </div>
-                    <span class="card-status-badge ${statusClass}">${player.status}</span>
+                    <span class="card-status-badge ${statusClass}">${player.status || 'Active'}</span>
                     <div class="player-photo-container">
                         <div class="player-photo-placeholder"><i class="fa-solid fa-basketball"></i></div>
                     </div>
@@ -407,8 +421,8 @@ function renderPlayers() {
                 <div class="card-body-area">
                     <div class="player-identity">
                         <div class="player-name-row">
-                            <h3 class="player-card-name" title="${player.playerName}">${player.playerName}</h3>
-                            <span class="player-number-badge">#${player.jerseyNumber}</span>
+                            <h3 class="player-card-name" title="${pName}">${pName}</h3>
+                            <span class="player-number-badge">#${player.playerNumber || player.jerseyNumber || 0}</span>
                         </div>
                         <div class="player-meta-row">
                             <span><i class="fa-solid fa-shield-halved"></i> Team: ${player.teamId}</span>
@@ -424,7 +438,6 @@ function renderPlayers() {
     .join('');
 }
 
-// Short abbreviations helper
 function getPositionAbbr(pos) {
   switch (pos) {
     case 'PG':

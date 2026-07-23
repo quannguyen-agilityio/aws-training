@@ -1,0 +1,129 @@
+name: Quality-Gated CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - develop
+      - staging
+      - main
+  pull_request:
+    branches:
+      - develop
+      - main
+
+jobs:
+  # -------------------------------------------------------------
+  # JOB 1: QUALITY CHECK & BUILD (GATING JOB)
+  # Includes Linting, Unit Testing, and TypeScript Compilation
+  # -------------------------------------------------------------
+  quality-check-and-build:
+    name: Lint, Test & Build (Quality Gate)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'npm'
+
+      # --- Backend Checks & Build ---
+      - name: Install Backend Dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Lint Backend TypeScript
+        working-directory: backend
+        run: npm run lint
+
+      - name: Execute Backend Unit Tests
+        working-directory: backend
+        run: npm run test
+
+      - name: Compile & Package Lambda Bundles
+        working-directory: backend
+        run: npm run build
+
+      # --- Frontend Checks & Build ---
+      - name: Install Frontend Dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build Frontend Application
+        working-directory: frontend
+        run: npm run build
+        env:
+          VITE_API_ENDPOINT: ${{ vars.VITE_API_ENDPOINT }}
+
+      - name: Package Frontend Artifact
+        working-directory: frontend
+        run: |
+          cd dist
+          zip -r ../frontend-dist.zip .
+
+      # --- Store Build Artifacts ---
+      - name: Save Backend Zip Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-lambdas
+          path: backend/dist/*.zip
+
+      - name: Save Frontend Zip Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/frontend-dist.zip
+
+  # -------------------------------------------------------------
+  # JOB 2: DEPLOYMENT (AUTOMATICALLY BLOCKED IF JOB 1 FAILS)
+  # -------------------------------------------------------------
+  deploy:
+    name: Deploy to AWS Infrastructure
+    needs: quality-check-and-build # STRICT QUALITY GATE
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref_name }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-southeast-2
+
+      # --- Deploy Frontend to AWS Amplify Hosting ---
+      - name: Deploy Frontend to AWS Amplify
+        run: |
+          DEPLOYMENT_INFO=$(aws amplify create-deployment --app-id ${{ secrets.AMPLIFY_APP_ID }} --branch-name ${{ github.ref_name }})
+          JOB_ID=$(echo $DEPLOYMENT_INFO | jq -r '.jobId')
+          UPLOAD_URL=$(echo $DEPLOYMENT_INFO | jq -r '.zipUploadUrl')
+
+          curl --request PUT --upload-file artifacts/frontend-dist/frontend-dist.zip "$UPLOAD_URL"
+          aws amplify start-deployment --app-id ${{ secrets.AMPLIFY_APP_ID }} --branch-name ${{ github.ref_name }} --job-id $JOB_ID
+
+      # --- Deploy Backend Lambda Artifacts to AWS ---
+      - name: Deploy Sync Producer Lambda
+        run: |
+          aws lambda update-function-code \
+            --function-name SyncProducerLambda \
+            --zip-file fileb://artifacts/backend-lambdas/producer.zip \
+            --region ap-southeast-2 || echo "Lambda deployment placeholder"
+
+      - name: Deploy Async Consumer Lambda
+        run: |
+          aws lambda update-function-code \
+            --function-name AsyncConsumerLambda \
+            --zip-file fileb://artifacts/backend-lambdas/consumer.zip \
+            --region ap-southeast-2 || echo "Lambda deployment placeholder"

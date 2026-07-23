@@ -1,0 +1,32 @@
+{
+  "resourceName": "apexAuth",
+  "authSelections": "identityPoolAndUserPool",
+  "userPoolName": "ApexAthletesUserPool",
+  "autoVerifiedAttributes": ["email"],
+  "mfaConfiguration": "OFF",
+  "mfaTypes": ["SMS Text Message"],
+  "smsAuthenticationMessage": "Your authentication code is {####}",
+  "smsVerificationMessage": "Your verification code is {####}",
+  "emailVerificationSubject": "Apex Athletes - Verification Code",
+  "emailVerificationMessage": "Your verification code is {####}",
+  "defaultPasswordPolicy": true,
+  "passwordPolicyMinLength": 8,
+  "passwordPolicyCharacters": [
+    "Requires Lowercase",
+    "Requires Numbers",
+    "Requires Uppercase"
+  ],
+  "requiredAttributes": ["email", "name"],
+  "aliasAttributes": ["email"],
+  "userpoolClientGenerateSecret": false,
+  "userpoolClientRefreshTokenValidity": 30,
+  "userpoolClientWriteAttributes": ["email", "name"],
+  "userpoolClientReadAttributes": ["email", "name"],
+  "userpoolClientLambdaRole": "apexAuth_userpoolclient_lambda_role",
+  "userpoolClientSetAttributes": false,
+  "sharedId": "apexAuth",
+  "userPoolGroupList": ["AdminGroup"],
+  "serviceName": "Cognito",
+  "usernameCaseSensitive": false,
+  "useDefault": "manual"
+}

@@ -1,22 +1,33 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Apex Athletes Serverless Backend Services",
   "type": "module",
   "scripts": {
-    "build": "zip -r producer.zip index.js producer.js package.json node_modules && zip -r consumer.zip consumer.js package.json node_modules",
-    "build:producer": "zip -r producer.zip index.js producer.js package.json node_modules",
-    "build:consumer": "zip -r consumer.zip consumer.js package.json node_modules",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsx scripts/build-lambdas.ts",
+    "build:producer": "tsx scripts/build-lambdas.ts --lambda=producer",
+    "build:consumer": "tsx scripts/build-lambdas.ts --lambda=consumer",
+    "lint": "eslint 'src/**/*.ts'",
+    "format": "prettier --write 'src/**/*.ts'",
+    "test": "vitest run"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.1087.0",
     "@aws-sdk/client-ses": "^3.1087.0",
     "@aws-sdk/client-sqs": "^3.1087.0",
     "@aws-sdk/lib-dynamodb": "^3.1087.0"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.138",
+    "@types/node": "^20.12.12",
+    "@typescript-eslint/eslint-plugin": "^7.10.0",
+    "@typescript-eslint/parser": "^7.10.0",
+    "aws-sdk-client-mock": "^4.0.0",
+    "esbuild": "^0.21.3",
+    "eslint": "^8.57.0",
+    "prettier": "^3.2.5",
+    "tsx": "^4.11.0",
+    "typescript": "^5.4.5",
+    "vitest": "^1.6.0"
   }
 }
