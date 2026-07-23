@@ -4,6 +4,8 @@ node_modules/
 
 # Production output
 dist/
+coverage/
+*.lcov
 *.zip
 
 # Local env files
