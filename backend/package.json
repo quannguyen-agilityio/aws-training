@@ -5,13 +5,12 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "build": "zip -r producer.zip index.js producer.js package.json node_modules && zip -r consumer.zip consumer.js package.json node_modules",
-    "build:producer": "zip -r producer.zip index.js producer.js package.json node_modules",
-    "build:consumer": "zip -r consumer.zip consumer.js package.json node_modules",
+    "build": "tsx scripts/build-lambdas.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --ext .ts",
     "format": "prettier --write .",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "keywords": [],
   "author": "",
@@ -23,12 +22,17 @@
     "@aws-sdk/lib-dynamodb": "^3.1087.0"
   },
   "devDependencies": {
+    "@types/adm-zip": "^0.5.7",
     "@types/node": "^22.13.0",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0",
+    "adm-zip": "^0.5.16",
+    "esbuild": "^0.25.0",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
     "prettier": "^3.5.0",
-    "typescript": "~5.5.4"
+    "tsx": "^4.19.2",
+    "typescript": "~5.5.4",
+    "vitest": "^3.0.5"
   }
 }
