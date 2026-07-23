@@ -81,13 +81,10 @@ async function buildLambdas() {
     zip.addLocalFile(outFile);
 
     const distZipPath = path.join(DIST_DIR, `${lambdaName}.zip`);
-    const rootZipPath = path.join(BACKEND_ROOT, `${lambdaName}.zip`);
-
     zip.writeZip(distZipPath);
-    zip.writeZip(rootZipPath);
 
     console.log(
-      `✅ Successfully generated deployment package: ${path.relative(BACKEND_ROOT, distZipPath)} and ${lambdaName}.zip`
+      `✅ Successfully generated deployment package: ${path.relative(BACKEND_ROOT, distZipPath)}`
     );
   }
 

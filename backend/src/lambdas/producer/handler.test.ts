@@ -1,14 +1,22 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { mockClient } from 'aws-sdk-client-mock';
+import { DynamoDBDocumentClient, ScanCommand } from '@aws-sdk/lib-dynamodb';
 import { handler } from './handler';
 
-describe('Producer Handler Unit Tests', () => {
-  it('should return 200 status code with success message', async () => {
+const ddbMock = mockClient(DynamoDBDocumentClient);
+
+describe('Producer Handler Entry Point Unit Tests', () => {
+  beforeEach(() => {
+    ddbMock.reset();
+  });
+
+  it('should delegate GET request to ProducerController and return 200', async () => {
+    ddbMock.on(ScanCommand).resolves({ Items: [] });
+
     const event = { httpMethod: 'GET' };
     const result = await handler(event);
 
     expect(result.statusCode).toBe(200);
-    const body = JSON.parse(result.body);
-    expect(body.message).toBe('Producer Lambda function working properly');
-    expect(body.method).toBe('GET');
+    expect(result.headers?.['Access-Control-Allow-Origin']).toBe('*');
   });
 });

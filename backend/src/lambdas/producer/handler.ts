@@ -1,16 +1,8 @@
-export async function handler(event: { httpMethod?: string; body?: string }) {
-  const method = event.httpMethod || 'GET';
-  console.log(`[Producer Lambda] Request method: ${method}`);
+import { ApiGatewayProxyEvent, ApiResponse } from '@shared/types';
+import { ProducerController } from './controller';
 
-  return {
-    statusCode: 200,
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-    },
-    body: JSON.stringify({
-      message: 'Producer Lambda function working properly',
-      method,
-    }),
-  };
+const controller = new ProducerController();
+
+export async function handler(event: ApiGatewayProxyEvent): Promise<ApiResponse> {
+  return controller.handle(event);
 }
