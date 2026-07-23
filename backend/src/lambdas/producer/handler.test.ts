@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { handler } from './handler.js';
+import { handler } from './handler';
 
 describe('Producer Handler Unit Tests', () => {
   it('should return 200 status code with success message', async () => {
