@@ -60,9 +60,7 @@ async function loadPlayers() {
   try {
     const response = await axios.get(`${API_URL}/v1/players`);
     // Assuming API returns an array or an object with players array
-    players = Array.isArray(response.data)
-      ? response.data
-      : response.data.players || [];
+    players = Array.isArray(response.data) ? response.data : response.data.players || [];
     renderPlayers();
   } catch (error) {
     console.error('Error fetching players:', error);
@@ -93,8 +91,7 @@ function setAdminState(active) {
     addPlayerBtn.style.display = 'inline-flex';
   } else {
     sessionStorage.removeItem('apex_admin_auth');
-    authBtn.innerHTML =
-      '<i class="fa-solid fa-lock"></i> <span>Admin Login</span>';
+    authBtn.innerHTML = '<i class="fa-solid fa-lock"></i> <span>Admin Login</span>';
     authBtn.classList.remove('btn-secondary');
     authBtn.classList.add('btn-primary');
     adminStatusBar.innerHTML =
@@ -214,8 +211,7 @@ function setupEventListeners() {
   // Player Add Form Trigger
   addPlayerBtn.addEventListener('click', () => {
     editingPlayerId = null;
-    playerModalTitle.innerHTML =
-      '<i class="fa-solid fa-user-plus"></i> Add Player Record';
+    playerModalTitle.innerHTML = '<i class="fa-solid fa-user-plus"></i> Add Player Record';
     playerForm.reset();
     playerIdInput.readOnly = false;
     openModal('playerModal');
@@ -234,11 +230,11 @@ function setupEventListeners() {
         await axios.delete(`${API_URL}/v1/players`, {
           data: {
             playerId: deletingPlayerId,
-            teamId: deletingTeamId
-          }
+            teamId: deletingTeamId,
+          },
         });
         const playerIndex = players.findIndex(
-          (p) => p.playerId === deletingPlayerId && p.teamId === deletingTeamId,
+          (p) => p.playerId === deletingPlayerId && p.teamId === deletingTeamId
         );
         if (playerIndex > -1) {
           const deletedName = players[playerIndex].playerName;
@@ -301,8 +297,7 @@ window.triggerEditPlayer = function (id) {
   if (!player) return;
 
   editingPlayerId = id;
-  playerModalTitle.innerHTML =
-    '<i class="fa-solid fa-user-pen"></i> Edit Player Record';
+  playerModalTitle.innerHTML = '<i class="fa-solid fa-user-pen"></i> Edit Player Record';
 
   // Populate fields
   playerIdInput.value = player.playerId;

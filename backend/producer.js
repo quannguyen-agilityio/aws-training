@@ -14,9 +14,7 @@ export async function handler(event) {
   let response;
   const method =
     event.httpMethod ||
-    (event.requestContext &&
-      event.requestContext.http &&
-      event.requestContext.http.method);
+    (event.requestContext && event.requestContext.http && event.requestContext.http.method);
 
   console.log(`[Producer] Incoming request method: ${method}`);
 
@@ -69,7 +67,9 @@ export async function handler(event) {
 
         const sqsResult = await sqsClient.send(new SendMessageCommand(sendParams));
 
-        console.log(`[Producer] Message enqueued to SQS successfully. MessageId: ${sqsResult.MessageId}, EventId: ${eventId}`);
+        console.log(
+          `[Producer] Message enqueued to SQS successfully. MessageId: ${sqsResult.MessageId}, EventId: ${eventId}`
+        );
 
         // Return immediate client acknowledgment (202 Accepted)
         response = {
@@ -87,9 +87,7 @@ export async function handler(event) {
       }
 
       case 'GET': {
-        const scanRes = await docClient.send(
-          new ScanCommand({ TableName: TABLE_NAME })
-        );
+        const scanRes = await docClient.send(new ScanCommand({ TableName: TABLE_NAME }));
         response = { statusCode: 200, body: JSON.stringify(scanRes.Items || []) };
         break;
       }

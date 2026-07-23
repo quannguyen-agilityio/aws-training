@@ -20,10 +20,14 @@ export async function handler(event) {
       const payload = JSON.parse(record.body || '{}');
       const { teamId, playerId, name, email, eventId, position } = payload;
 
-      console.log(`[Consumer] Processing record - MessageId: ${messageId}, EventId: ${eventId}, PlayerId: ${playerId}, Email: ${email}`);
+      console.log(
+        `[Consumer] Processing record - MessageId: ${messageId}, EventId: ${eventId}, PlayerId: ${playerId}, Email: ${email}`
+      );
 
       if (!teamId || !playerId || !email) {
-        console.error(`[Consumer] Invalid payload in record ${messageId}: missing teamId, playerId, or email.`);
+        console.error(
+          `[Consumer] Invalid payload in record ${messageId}: missing teamId, playerId, or email.`
+        );
         // Don't retry unrecoverable malformed messages
         continue;
       }
@@ -38,7 +42,9 @@ export async function handler(event) {
       );
 
       if (existingRecord.Item && existingRecord.Item.onboardingStatus === 'COMPLETED') {
-        console.log(`[Consumer] Idempotency trigger: Player ${playerId} (${teamId}) already onboarded. Skipping SES email.`);
+        console.log(
+          `[Consumer] Idempotency trigger: Player ${playerId} (${teamId}) already onboarded. Skipping SES email.`
+        );
         continue;
       }
 
@@ -126,7 +132,9 @@ export async function handler(event) {
       };
 
       const sesResult = await sesClient.send(new SendEmailCommand(emailParams));
-      console.log(`[Consumer] SES Welcome Email sent successfully. MessageId: ${sesResult.MessageId}`);
+      console.log(
+        `[Consumer] SES Welcome Email sent successfully. MessageId: ${sesResult.MessageId}`
+      );
 
       // 3. Mark Onboarding Status as COMPLETED in DynamoDB
       await docClient.send(
@@ -141,7 +149,6 @@ export async function handler(event) {
         })
       );
       console.log(`[Consumer] Successfully completed onboarding for player ${playerId}`);
-
     } catch (err) {
       console.error(`[Consumer] Error processing SQS message ${messageId}:`, err);
       // Record failure for SQS partial batch retry

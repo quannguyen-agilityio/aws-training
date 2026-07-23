@@ -114,15 +114,15 @@ The synchronous flow is used for operations that require an instant response to 
 
 ### Flow Matrix
 
-| Step | Component / Action | Source → Destination | Description |
-| :---: | :--- | :--- | :--- |
-| **1** | Serve Frontend Assets | Client $\rightarrow$ Amplify Hosting | Client accesses the web app. Amplify Hosting (S3 static storage + CloudFront CDN) rapidly delivers HTML, CSS, and JS assets. |
-| **2** | Identity Authentication | Client $\rightarrow$ Cognito User Pool | User submits login credentials. Cognito validates and returns JWT Tokens (ID Token, Access Token, Refresh Token). |
-| **3** | API Request Entryway | Client $\rightarrow$ API Gateway | Client attaches Access Token to HTTP header (`Authorization: Bearer <JWT>`) for endpoint actions (e.g., `GET /orders`). |
-| **4** | Token Verification | API Gateway $\leftrightarrow$ Cognito | API Gateway validates JWT signature. If invalid or expired, rejects request with `401 Unauthorized` without invoking Lambda. |
-| **5** | Business Logic Execution | API Gateway $\rightarrow$ Lambda Sync | Upon successful validation, API Gateway triggers Lambda Sync Worker via Lambda Proxy Integration passing JSON event. |
-| **6** | Database Operations | Lambda Sync $\leftrightarrow$ DynamoDB | Lambda Sync executes read/write commands (`GetItem`, `Query`, `PutItem`) directly against DynamoDB Table with single-digit ms latency. |
-| **7** | HTTP Response Delivery | Lambda Sync $\rightarrow$ APIGW $\rightarrow$ Client | Lambda returns formatted JSON payload to API Gateway. API Gateway responds with `200 OK + Data` to render on UI. |
+| Step  | Component / Action       | Source → Destination                                 | Description                                                                                                                            |
+| :---: | :----------------------- | :--------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------- |
+| **1** | Serve Frontend Assets    | Client $\rightarrow$ Amplify Hosting                 | Client accesses the web app. Amplify Hosting (S3 static storage + CloudFront CDN) rapidly delivers HTML, CSS, and JS assets.           |
+| **2** | Identity Authentication  | Client $\rightarrow$ Cognito User Pool               | User submits login credentials. Cognito validates and returns JWT Tokens (ID Token, Access Token, Refresh Token).                      |
+| **3** | API Request Entryway     | Client $\rightarrow$ API Gateway                     | Client attaches Access Token to HTTP header (`Authorization: Bearer <JWT>`) for endpoint actions (e.g., `GET /orders`).                |
+| **4** | Token Verification       | API Gateway $\leftrightarrow$ Cognito                | API Gateway validates JWT signature. If invalid or expired, rejects request with `401 Unauthorized` without invoking Lambda.           |
+| **5** | Business Logic Execution | API Gateway $\rightarrow$ Lambda Sync                | Upon successful validation, API Gateway triggers Lambda Sync Worker via Lambda Proxy Integration passing JSON event.                   |
+| **6** | Database Operations      | Lambda Sync $\leftrightarrow$ DynamoDB               | Lambda Sync executes read/write commands (`GetItem`, `Query`, `PutItem`) directly against DynamoDB Table with single-digit ms latency. |
+| **7** | HTTP Response Delivery   | Lambda Sync $\rightarrow$ APIGW $\rightarrow$ Client | Lambda returns formatted JSON payload to API Gateway. API Gateway responds with `200 OK + Data` to render on UI.                       |
 
 ---
 
@@ -164,14 +164,14 @@ The asynchronous flow handles heavy or slow background tasks (e.g., Payment Proc
 
 ### Flow Matrix
 
-| Step | Component / Action | Source → Destination | Description |
-| :---: | :--- | :--- | :--- |
-| **1** | Push Task to Queue | Lambda Sync $\rightarrow$ SQS Queue | Performs basic validation and pushes task message containing order details into Amazon SQS Queue. |
-| **2** | Immediate Response | Lambda Sync $\rightarrow$ Client | Immediately returns `HTTP 202 Accepted` to client. SQS acts as a buffer (load leveler) absorbing traffic spikes. |
-| **3** | Event Batching & Ingestion | SQS $\rightarrow$ Lambda Async | AWS Event Source Mapping (ESM) polls SQS in batches (e.g., 10 messages/batch) and invokes Lambda Async Worker. |
-| **4a** | State Mutation | Lambda Async $\rightarrow$ DynamoDB | Lambda Async updates order status from `PENDING` to `COMPLETED` in DynamoDB Table. |
-| **4b** | Event Publishing | Lambda Async $\rightarrow$ SNS Topic | Upon task completion, Lambda Async publishes a success event to Amazon SNS Topic. |
-| **5 & 6**| Email Delivery | SNS $\rightarrow$ SES $\rightarrow$ User Email | SNS triggers Amazon SES (Simple Email Service) to generate and send HTML email receipt to user's inbox. |
+|   Step    | Component / Action         | Source → Destination                           | Description                                                                                                      |
+| :-------: | :------------------------- | :--------------------------------------------- | :--------------------------------------------------------------------------------------------------------------- |
+|   **1**   | Push Task to Queue         | Lambda Sync $\rightarrow$ SQS Queue            | Performs basic validation and pushes task message containing order details into Amazon SQS Queue.                |
+|   **2**   | Immediate Response         | Lambda Sync $\rightarrow$ Client               | Immediately returns `HTTP 202 Accepted` to client. SQS acts as a buffer (load leveler) absorbing traffic spikes. |
+|   **3**   | Event Batching & Ingestion | SQS $\rightarrow$ Lambda Async                 | AWS Event Source Mapping (ESM) polls SQS in batches (e.g., 10 messages/batch) and invokes Lambda Async Worker.   |
+|  **4a**   | State Mutation             | Lambda Async $\rightarrow$ DynamoDB            | Lambda Async updates order status from `PENDING` to `COMPLETED` in DynamoDB Table.                               |
+|  **4b**   | Event Publishing           | Lambda Async $\rightarrow$ SNS Topic           | Upon task completion, Lambda Async publishes a success event to Amazon SNS Topic.                                |
+| **5 & 6** | Email Delivery             | SNS $\rightarrow$ SES $\rightarrow$ User Email | SNS triggers Amazon SES (Simple Email Service) to generate and send HTML email receipt to user's inbox.          |
 
 > [!IMPORTANT]
 > **Critical Configuration Rule**: SQS Visibility Timeout must be configured to at least **6 times** the Lambda Async Timeout to prevent duplicate message processing.
@@ -212,15 +212,15 @@ The asynchronous flow handles heavy or slow background tasks (e.g., Payment Proc
 
 ### Security & Observability Matrix
 
-| Feature | AWS Service | Implementation Details |
-| :--- | :--- | :--- |
-| **Least Privilege IAM (Sync)** | AWS IAM | Grants `sqs:SendMessage` to SQS Queue and Read/Write access (`GetItem`, `Query`, `PutItem`) to specific DynamoDB tables. |
-| **Least Privilege IAM (Async)**| AWS IAM | Grants `sqs:ReceiveMessage`, `sqs:DeleteMessage`, `sns:Publish` to SNS Topic, and `dynamodb:UpdateItem` in DynamoDB. |
-| **Centralized Logging** | CloudWatch Logs | Standard output (`console.log`) and runtime metrics ingested into dedicated log groups in real time. |
-| **Log Analytics** | CloudWatch Insights | Executes interactive SQL-like queries across multiple log groups simultaneously to filter `ERROR` events. |
-| **Operational Alarms** | CloudWatch Alarms | Sends SNS alerts to DevOps if Lambda error rate exceeds **5%** or SQS queue depth exceeds **1000 messages**. |
-| **Distributed Tracing** | AWS X-Ray | Propagates `X-Amzn-Trace-Id` across `APIGW` $\rightarrow$ `Sync Lambda` $\rightarrow$ `SQS` $\rightarrow$ `Async Lambda` $\rightarrow$ `DynamoDB`. |
-| **Visual Dashboard** | ServiceLens | Combines CloudWatch Metrics, Logs, and X-Ray Traces into a visual Service Map highlighting latency bottlenecks. |
+| Feature                         | AWS Service         | Implementation Details                                                                                                                             |
+| :------------------------------ | :------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Least Privilege IAM (Sync)**  | AWS IAM             | Grants `sqs:SendMessage` to SQS Queue and Read/Write access (`GetItem`, `Query`, `PutItem`) to specific DynamoDB tables.                           |
+| **Least Privilege IAM (Async)** | AWS IAM             | Grants `sqs:ReceiveMessage`, `sqs:DeleteMessage`, `sns:Publish` to SNS Topic, and `dynamodb:UpdateItem` in DynamoDB.                               |
+| **Centralized Logging**         | CloudWatch Logs     | Standard output (`console.log`) and runtime metrics ingested into dedicated log groups in real time.                                               |
+| **Log Analytics**               | CloudWatch Insights | Executes interactive SQL-like queries across multiple log groups simultaneously to filter `ERROR` events.                                          |
+| **Operational Alarms**          | CloudWatch Alarms   | Sends SNS alerts to DevOps if Lambda error rate exceeds **5%** or SQS queue depth exceeds **1000 messages**.                                       |
+| **Distributed Tracing**         | AWS X-Ray           | Propagates `X-Amzn-Trace-Id` across `APIGW` $\rightarrow$ `Sync Lambda` $\rightarrow$ `SQS` $\rightarrow$ `Async Lambda` $\rightarrow$ `DynamoDB`. |
+| **Visual Dashboard**            | ServiceLens         | Combines CloudWatch Metrics, Logs, and X-Ray Traces into a visual Service Map highlighting latency bottlenecks.                                    |
 
 ---
 
@@ -265,10 +265,12 @@ This section details the continuous integration, build, packaging, and deploymen
 The frontend deployment is fully automated using GitHub Actions (`.github/workflows/amplify-deploy.yml`).
 
 #### Workflow Specifications
+
 - **Triggers**: Automated push to `develop` or `staging` branches.
 - **Environment Matrix**: Environment variables are scoped dynamically to `${{ github.ref_name }}`.
 
 #### Build & Deployment Steps
+
 1. **Checkout & Runtime Setup**: Checks out repository code and sets up Node.js v24 with `npm` caching configured against `frontend/package-lock.json`.
 2. **Dependency Installation**: Executes `npm ci` inside the `frontend/` working directory for clean, deterministic builds.
 3. **Application Build**: Runs `npm run build` using Vite, passing `VITE_API_ENDPOINT` from environment secret variables. The compiled production bundle is generated in `frontend/dist/`.
@@ -286,6 +288,7 @@ The frontend deployment is fully automated using GitHub Actions (`.github/workfl
 The backend consists of Node.js ES Module scripts (`producer.js` for the synchronous Producer/Sync Lambda, and `consumer.js` for the asynchronous Consumer/Async Lambda).
 
 #### Package Scripts (`backend/package.json`)
+
 ```json
 {
   "scripts": {
@@ -297,6 +300,7 @@ The backend consists of Node.js ES Module scripts (`producer.js` for the synchro
 ```
 
 #### Artifact Output
+
 - `producer.zip`: Contains `index.js`, `producer.js`, `package.json`, and `node_modules`. Deployed to the **Sync/Producer Lambda Function**.
 - `consumer.zip`: Contains `consumer.js`, `package.json`, and `node_modules`. Deployed to the **Async/Consumer Lambda Function**.
 
@@ -326,6 +330,7 @@ aws lambda update-function-code \
 ```
 
 #### Event Source & Integration Wiring Checklist
+
 1. **SQS Event Source Mapping**:
    - Configure Event Source Mapping between the SQS Queue ARN and `AsyncConsumerLambda`.
    - Batch size: `10`.
@@ -341,8 +346,8 @@ aws lambda update-function-code \
 
 ### 4. Summary Matrix of Build & Deployment Artifacts
 
-| Component | Source Path | Build Command | Output Artifact | Target Service |
-| :--- | :--- | :--- | :--- | :--- |
-| **Frontend** | `/frontend` | `npm run build` | `dist.zip` | AWS Amplify Hosting (S3 + CloudFront) |
-| **Backend Producer** | `/backend/producer.js` | `npm run build:producer` | `producer.zip` | AWS Lambda (Sync Worker) |
-| **Backend Consumer** | `/backend/consumer.js` | `npm run build:consumer` | `consumer.zip` | AWS Lambda (Async Worker) |
+| Component            | Source Path            | Build Command            | Output Artifact | Target Service                        |
+| :------------------- | :--------------------- | :----------------------- | :-------------- | :------------------------------------ |
+| **Frontend**         | `/frontend`            | `npm run build`          | `dist.zip`      | AWS Amplify Hosting (S3 + CloudFront) |
+| **Backend Producer** | `/backend/producer.js` | `npm run build:producer` | `producer.zip`  | AWS Lambda (Sync Worker)              |
+| **Backend Consumer** | `/backend/consumer.js` | `npm run build:consumer` | `consumer.zip`  | AWS Lambda (Async Worker)             |
