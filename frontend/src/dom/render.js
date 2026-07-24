@@ -7,7 +7,7 @@ export function renderPlayers(players, isAdmin) {
   const statusVal = elements.statusFilter?.value || '';
 
   const filtered = players.filter((player) => {
-    const pName = player.playerName || '';
+    const pName = player.playerName || player.name || '';
     const pTeam = player.teamId || '';
     const pPos = player.position || '';
 
@@ -50,6 +50,7 @@ export function renderPlayers(players, isAdmin) {
   elements.playersGrid.innerHTML = filtered
     .map((player) => {
       const statusClass = `status-${player.status ? player.status.toLowerCase() : 'active'}`;
+      const displayName = player.playerName || player.name || 'Unnamed Player';
 
       const actionControls = isAdmin
         ? `
@@ -71,7 +72,7 @@ export function renderPlayers(players, isAdmin) {
                     <div class="player-badge-overlay">
                         <div class="player-pos-short">${getPositionAbbr(player.position)}</div>
                     </div>
-                    <span class="card-status-badge ${statusClass}">${player.status}</span>
+                    <span class="card-status-badge ${statusClass}">${player.status || 'Active'}</span>
                     <div class="player-photo-container">
                         <div class="player-photo-placeholder"><i class="fa-solid fa-basketball"></i></div>
                     </div>
@@ -79,8 +80,8 @@ export function renderPlayers(players, isAdmin) {
                 <div class="card-body-area">
                     <div class="player-identity">
                         <div class="player-name-row">
-                            <h3 class="player-card-name" title="${player.playerName}">${player.playerName}</h3>
-                            <span class="player-number-badge">#${player.jerseyNumber}</span>
+                            <h3 class="player-card-name" title="${displayName}">${displayName}</h3>
+                            <span class="player-number-badge">#${player.jerseyNumber || 0}</span>
                         </div>
                         <div class="player-meta-row">
                             <span><i class="fa-solid fa-shield-halved"></i> Team: ${player.teamId}</span>
@@ -88,6 +89,11 @@ export function renderPlayers(players, isAdmin) {
                         <div class="player-meta-row">
                             <span><i class="fa-solid fa-id-card"></i> ID: ${player.playerId}</span>
                         </div>
+                        ${
+                          player.email
+                            ? `<div class="player-meta-row"><span><i class="fa-solid fa-envelope"></i> ${player.email}</span></div>`
+                            : ''
+                        }
                     </div>
                 </div>
             </div>

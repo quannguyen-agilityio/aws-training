@@ -192,7 +192,9 @@ function setupEventListeners() {
 async function savePlayer() {
   const newPlayer = {
     playerId: elements.playerIdInput?.value.trim(),
+    name: elements.playerName?.value.trim(),
     playerName: elements.playerName?.value.trim(),
+    email: elements.playerEmail?.value.trim(),
     teamId: elements.teamIdInput?.value.trim(),
     position: elements.playerPosition?.value,
     jerseyNumber: parseInt(elements.playerNumber?.value || '0', 10),
@@ -239,7 +241,8 @@ window.triggerEditPlayer = function (id) {
     elements.playerIdInput.value = player.playerId;
     elements.playerIdInput.readOnly = true;
   }
-  if (elements.playerName) elements.playerName.value = player.playerName;
+  if (elements.playerName) elements.playerName.value = player.playerName || player.name || '';
+  if (elements.playerEmail) elements.playerEmail.value = player.email || '';
   if (elements.teamIdInput) elements.teamIdInput.value = player.teamId;
   if (elements.playerNumber) elements.playerNumber.value = player.jerseyNumber;
   if (elements.playerPosition) elements.playerPosition.value = player.position;

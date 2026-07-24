@@ -20,6 +20,7 @@ export const elements = {
   playerName: document.getElementById('playerName'),
   teamIdInput: document.getElementById('teamId'),
   playerNumber: document.getElementById('playerNumber'),
+  playerEmail: document.getElementById('playerEmail'),
   playerPosition: document.getElementById('playerPosition'),
   playerStatus: document.getElementById('playerStatus'),
 
