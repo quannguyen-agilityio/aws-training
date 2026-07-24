@@ -28,6 +28,8 @@
     "vite": "^8.1.4"
   },
   "dependencies": {
+    "@aws-amplify/auth": "^6.10.4",
+    "aws-amplify": "^6.12.2",
     "axios": "^1.18.1"
   }
 }
