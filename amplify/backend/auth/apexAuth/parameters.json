@@ -1,6 +1,4 @@
 {
-  "identityPoolName": "apexAuth_identitypool",
-  "allowUnauthenticatedIdentities": false,
   "resourceNameTruncated": "apexAuth",
   "userPoolName": "ApexAthletes-UserPool",
   "autoVerifiedAttributes": ["email"],
@@ -23,8 +21,8 @@
   "userpoolClientSetAttributes": false,
   "sharedId": "apexAuth",
   "resourceName": "apexAuth",
-  "authSelections": "identityPoolAndUserPool",
-  "useDefault": "default",
+  "authSelections": "userPoolOnly",
+  "useDefault": "manual",
   "usernameAttributes": ["email"],
   "userPoolGroupList": ["AdminGroup"],
   "serviceName": "Cognito",
