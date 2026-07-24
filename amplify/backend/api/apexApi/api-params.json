@@ -1,0 +1,37 @@
+{
+  "apiName": "apexApi",
+  "privacy": {
+    "open": true
+  },
+  "resourceName": "apexApi",
+  "paths": [
+    {
+      "name": "/players",
+      "lambdaFunction": "producer",
+      "privacy": {
+        "open": true,
+        "protected": true,
+        "auth": {
+          "userPoolId": "apexAuth"
+        }
+      }
+    },
+    {
+      "name": "/players/{playerId}",
+      "lambdaFunction": "producer",
+      "privacy": {
+        "protected": true,
+        "auth": {
+          "userPoolId": "apexAuth"
+        }
+      }
+    }
+  ],
+  "dependsOn": [
+    {
+      "category": "auth",
+      "resourceName": "apexAuth",
+      "attributes": ["UserPoolId"]
+    }
+  ]
+}
