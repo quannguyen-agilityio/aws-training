@@ -1,0 +1,73 @@
+name: Backend Quality Gate & AWS Lambda Deployment
+
+on:
+  push:
+    branches:
+      - develop
+      - staging
+      - main
+    paths:
+      - 'backend/**'
+      - 'amplify/**'
+      - '.github/workflows/backend-ci-cd.yml'
+
+jobs:
+  quality-gate-and-deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref_name }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install Dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Typecheck
+        working-directory: backend
+        run: npm run typecheck
+
+      - name: Lint Code
+        working-directory: backend
+        run: npm run lint
+
+      - name: Run Unit Tests
+        working-directory: backend
+        run: npm run test
+
+      - name: Build Lambda Functions
+        working-directory: backend
+        run: npm run build
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION || 'ap-southeast-2' }}
+
+      - name: Deploy Producer Lambda
+        run: |
+          if aws lambda get-function --function-name ApexProducer 2>/dev/null; then
+            aws lambda update-function-code --function-name ApexProducer --zip-file fileb://backend/dist/producer.zip
+            echo "Successfully updated ApexProducer Lambda code."
+          else
+            echo "ApexProducer function does not exist on AWS yet. Skipping live code update."
+          fi
+
+      - name: Deploy Consumer Lambda
+        run: |
+          if aws lambda get-function --function-name ApexConsumer 2>/dev/null; then
+            aws lambda update-function-code --function-name ApexConsumer --zip-file fileb://backend/dist/consumer.zip
+            echo "Successfully updated ApexConsumer Lambda code."
+          else
+            echo "ApexConsumer function does not exist on AWS yet. Skipping live code update."
+          fi

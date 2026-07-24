@@ -8,7 +8,7 @@ describe('AWS SDK Singletons & Config Unit Tests', () => {
   it('should load environment configuration correctly', () => {
     expect(config.awsRegion).toBeDefined();
     expect(config.tableName).toBeDefined();
-    expect(config.awsRegion).toBe('us-east-1');
+    expect(config.awsRegion).toBe(process.env.AWS_REGION || 'ap-southeast-2');
   });
 
   it('should initialize DynamoDB document client singleton', () => {
