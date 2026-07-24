@@ -56,18 +56,18 @@ jobs:
 
       - name: Deploy Producer Lambda
         run: |
-          if aws lambda get-function --function-name ApexProducer 2>/dev/null; then
-            aws lambda update-function-code --function-name ApexProducer --zip-file fileb://backend/dist/producer.zip
-            echo "Successfully updated ApexProducer Lambda code."
+          if aws lambda get-function --function-name GetPlayersHandler 2>/dev/null; then
+            aws lambda update-function-code --function-name GetPlayersHandler --zip-file fileb://backend/dist/producer.zip
+            echo "Successfully updated GetPlayersHandler Lambda code."
           else
-            echo "ApexProducer function does not exist on AWS yet. Skipping live code update."
+            echo "GetPlayersHandler function does not exist on AWS yet. Skipping live code update."
           fi
 
       - name: Deploy Consumer Lambda
         run: |
-          if aws lambda get-function --function-name ApexConsumer 2>/dev/null; then
-            aws lambda update-function-code --function-name ApexConsumer --zip-file fileb://backend/dist/consumer.zip
-            echo "Successfully updated ApexConsumer Lambda code."
+          if aws lambda get-function --function-name PlayerOnboardingConsumer 2>/dev/null; then
+            aws lambda update-function-code --function-name PlayerOnboardingConsumer --zip-file fileb://backend/dist/consumer.zip
+            echo "Successfully updated PlayerOnboardingConsumer Lambda code."
           else
-            echo "ApexConsumer function does not exist on AWS yet. Skipping live code update."
+            echo "PlayerOnboardingConsumer function does not exist on AWS yet. Skipping live code update."
           fi
