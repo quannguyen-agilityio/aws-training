@@ -9,6 +9,7 @@ const sesMock = mockClient(SESClient);
 
 describe('Consumer Handler Entry Point Unit Tests', () => {
   beforeEach(() => {
+    process.env.SENDER_EMAIL = 'noreply@example.com';
     ddbMock.reset();
     sesMock.reset();
   });
