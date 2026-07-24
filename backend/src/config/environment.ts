@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 export const config = {
-  awsRegion: process.env.AWS_REGION || 'us-east-1',
+  awsRegion: process.env.AWS_REGION || 'ap-southeast-2',
   tableName: process.env.TABLE_NAME || 'PlayersDashboard-Data',
   sqsQueueUrl: process.env.SQS_QUEUE_URL || '',
   senderEmail: process.env.SENDER_EMAIL || '',
