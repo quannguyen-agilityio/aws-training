@@ -1,0 +1,211 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Amplify Gen 1 Custom Stack for Storage (DynamoDB) and Messaging (SNS, SQS, DLQ)",
+  "Parameters": {
+    "env": {
+      "Type": "String",
+      "Description": "Current Amplify Environment (dev, staging, prod)"
+    }
+  },
+  "Resources": {
+    "ApexPlayersTable": {
+      "Type": "AWS::DynamoDB::Table",
+      "Properties": {
+        "TableName": {
+          "Fn::Sub": "ApexPlayers-${env}"
+        },
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "teamId",
+            "AttributeType": "S"
+          },
+          {
+            "AttributeName": "playerId",
+            "AttributeType": "S"
+          }
+        ],
+        "KeySchema": [
+          {
+            "AttributeName": "teamId",
+            "KeyType": "HASH"
+          },
+          {
+            "AttributeName": "playerId",
+            "KeyType": "RANGE"
+          }
+        ],
+        "BillingMode": "PAY_PER_REQUEST",
+        "TimeToLiveSpecification": {
+          "AttributeName": "ttl",
+          "Enabled": true
+        },
+        "Tags": [
+          {
+            "Key": "Environment",
+            "Value": {
+              "Ref": "env"
+            }
+          },
+          {
+            "Key": "ManagedBy",
+            "Value": "Amplify-IaC"
+          }
+        ]
+      }
+    },
+    "PlayerOnboardingDLQ": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": {
+        "QueueName": {
+          "Fn::Sub": "PlayerOnboardingDLQ-${env}"
+        },
+        "MessageRetentionPeriod": 1209600,
+        "Tags": [
+          {
+            "Key": "Environment",
+            "Value": {
+              "Ref": "env"
+            }
+          }
+        ]
+      }
+    },
+    "PlayerOnboardingQueue": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": {
+        "QueueName": {
+          "Fn::Sub": "PlayerOnboardingQueue-${env}"
+        },
+        "VisibilityTimeout": 300,
+        "RedrivePolicy": {
+          "deadLetterTargetArn": {
+            "Fn::GetAtt": ["PlayerOnboardingDLQ", "Arn"]
+          },
+          "maxReceiveCount": 3
+        },
+        "Tags": [
+          {
+            "Key": "Environment",
+            "Value": {
+              "Ref": "env"
+            }
+          }
+        ]
+      }
+    },
+    "PlayerOnboardingTopic": {
+      "Type": "AWS::SNS::Topic",
+      "Properties": {
+        "TopicName": {
+          "Fn::Sub": "PlayerOnboardingTopic-${env}"
+        },
+        "Tags": [
+          {
+            "Key": "Environment",
+            "Value": {
+              "Ref": "env"
+            }
+          }
+        ]
+      }
+    },
+    "PlayerOnboardingSubscription": {
+      "Type": "AWS::SNS::Subscription",
+      "Properties": {
+        "TopicArn": {
+          "Ref": "PlayerOnboardingTopic"
+        },
+        "Endpoint": {
+          "Fn::GetAtt": ["PlayerOnboardingQueue", "Arn"]
+        },
+        "Protocol": "sqs",
+        "RawMessageDelivery": true
+      }
+    },
+    "PlayerOnboardingQueuePolicy": {
+      "Type": "AWS::SQS::QueuePolicy",
+      "Properties": {
+        "Queues": [
+          {
+            "Ref": "PlayerOnboardingQueue"
+          }
+        ],
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Sid": "AllowSNSToPublishToSQS",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "sns.amazonaws.com"
+              },
+              "Action": "sqs:SendMessage",
+              "Resource": {
+                "Fn::GetAtt": ["PlayerOnboardingQueue", "Arn"]
+              },
+              "Condition": {
+                "ArnEquals": {
+                  "aws:SourceArn": {
+                    "Ref": "PlayerOnboardingTopic"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "ApexPlayersTableName": {
+      "Value": {
+        "Ref": "ApexPlayersTable"
+      },
+      "Export": {
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-ApexPlayersTableName"
+        }
+      }
+    },
+    "ApexPlayersTableArn": {
+      "Value": {
+        "Fn::GetAtt": ["ApexPlayersTable", "Arn"]
+      },
+      "Export": {
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-ApexPlayersTableArn"
+        }
+      }
+    },
+    "PlayerOnboardingQueueUrl": {
+      "Value": {
+        "Ref": "PlayerOnboardingQueue"
+      },
+      "Export": {
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-PlayerOnboardingQueueUrl"
+        }
+      }
+    },
+    "PlayerOnboardingQueueArn": {
+      "Value": {
+        "Fn::GetAtt": ["PlayerOnboardingQueue", "Arn"]
+      },
+      "Export": {
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-PlayerOnboardingQueueArn"
+        }
+      }
+    },
+    "PlayerOnboardingTopicArn": {
+      "Value": {
+        "Ref": "PlayerOnboardingTopic"
+      },
+      "Export": {
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-PlayerOnboardingTopicArn"
+        }
+      }
+    }
+  }
+}

@@ -31,5 +31,12 @@
         }
       ]
     }
+  },
+  "custom": {
+    "storageMessaging": {
+      "service": "customCloudFormation",
+      "providerPlugin": "awscloudformation",
+      "dependsOn": []
+    }
   }
 }
