@@ -1,0 +1,78 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Amplify Gen 1 Lambda Stack for Producer Function (PlayerOnboardingProducer)",
+  "Parameters": {
+    "env": {
+      "Type": "String"
+    }
+  },
+  "Resources": {
+    "ProducerFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "FunctionName": {
+          "Fn::Sub": "PlayerOnboardingProducer-${env}"
+        },
+        "Handler": "index.handler",
+        "Runtime": "nodejs24.x",
+        "MemorySize": 256,
+        "Timeout": 30,
+        "Role": {
+          "Fn::Sub": "arn:aws:iam::${AWS::AccountId}:role/ProducerLambdaRole-${env}"
+        },
+        "Code": {
+          "ZipFile": "exports.handler = async (event) => { return { statusCode: 200, body: JSON.stringify({ message: 'Producer placeholder' }) }; };"
+        },
+        "Environment": {
+          "Variables": {
+            "NODE_ENV": {
+              "Ref": "env"
+            },
+            "TABLE_NAME": {
+              "Fn::Sub": "ApexPlayers-${env}"
+            },
+            "QUEUE_URL": {
+              "Fn::Sub": "https://sqs.${AWS::Region}.amazonaws.com/${AWS::AccountId}/PlayerOnboardingQueue-${env}"
+            },
+            "SNS_TOPIC_ARN": {
+              "Fn::Sub": "arn:aws:sns:${AWS::Region}:${AWS::AccountId}:PlayerOnboardingTopic-${env}"
+            }
+          }
+        },
+        "Tags": [
+          {
+            "Key": "Environment",
+            "Value": {
+              "Ref": "env"
+            }
+          }
+        ]
+      }
+    },
+    "ApiGatewayInvokePermission": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "ProducerFunction"
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Sub": "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*/*/*/*"
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "FunctionName": {
+      "Value": {
+        "Ref": "ProducerFunction"
+      }
+    },
+    "FunctionArn": {
+      "Value": {
+        "Fn::GetAtt": ["ProducerFunction", "Arn"]
+      }
+    }
+  }
+}
