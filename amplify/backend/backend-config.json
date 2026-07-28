@@ -37,6 +37,11 @@
       "service": "customCloudFormation",
       "providerPlugin": "awscloudformation",
       "dependsOn": []
+    },
+    "iam": {
+      "service": "customCloudFormation",
+      "providerPlugin": "awscloudformation",
+      "dependsOn": []
     }
   }
 }
