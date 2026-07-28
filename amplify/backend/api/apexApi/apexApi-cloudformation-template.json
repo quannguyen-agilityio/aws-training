@@ -117,7 +117,7 @@
           "Type": "AWS_PROXY",
           "IntegrationHttpMethod": "POST",
           "Uri": {
-            "Fn::Sub": "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:GetPlayersHandler-${env}/invocations"
+            "Fn::Sub": "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:PlayerOnboardingProducer-${env}/invocations"
           }
         }
       }
@@ -140,7 +140,7 @@
           "Type": "AWS_PROXY",
           "IntegrationHttpMethod": "POST",
           "Uri": {
-            "Fn::Sub": "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:GetPlayersHandler-${env}/invocations"
+            "Fn::Sub": "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:PlayerOnboardingProducer-${env}/invocations"
           }
         }
       }
@@ -163,7 +163,7 @@
           "Type": "AWS_PROXY",
           "IntegrationHttpMethod": "POST",
           "Uri": {
-            "Fn::Sub": "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:GetPlayersHandler-${env}/invocations"
+            "Fn::Sub": "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:PlayerOnboardingProducer-${env}/invocations"
           }
         }
       }

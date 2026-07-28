@@ -56,11 +56,11 @@ jobs:
 
       - name: Deploy Producer Lambda
         run: |
-          if aws lambda get-function --function-name GetPlayersHandler 2>/dev/null; then
-            aws lambda update-function-code --function-name GetPlayersHandler --zip-file fileb://backend/dist/producer.zip
-            echo "Successfully updated GetPlayersHandler Lambda code."
+          if aws lambda get-function --function-name PlayerOnboardingProducer 2>/dev/null; then
+            aws lambda update-function-code --function-name PlayerOnboardingProducer --zip-file fileb://backend/dist/producer.zip
+            echo "Successfully updated PlayerOnboardingProducer Lambda code."
           else
-            echo "GetPlayersHandler function does not exist on AWS yet. Skipping live code update."
+            echo "PlayerOnboardingProducer function does not exist on AWS yet. Skipping live code update."
           fi
 
       - name: Deploy Consumer Lambda
