@@ -1,10 +1,4 @@
 version: 1
-backend:
-  phases:
-    build:
-      commands:
-        - '# Execute Amplify headless push for the target branch environment'
-        - amplifyPush --simple
 frontend:
   phases:
     preBuild:
@@ -21,4 +15,3 @@ frontend:
   cache:
     paths:
       - frontend/node_modules/**/*
-      - backend/node_modules/**/*
