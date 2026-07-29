@@ -9,6 +9,7 @@ on:
     paths:
       - 'backend/**'
       - 'amplify/**'
+      - 'amplify.yml'
       - '.github/workflows/backend-ci-cd.yml'
 
 jobs:
