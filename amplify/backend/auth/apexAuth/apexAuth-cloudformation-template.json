@@ -88,6 +88,45 @@
           "Ref": "UserPool"
         }
       }
+    },
+    "UserPoolIdSSMParameter": {
+      "Type": "AWS::SSM::Parameter",
+      "Properties": {
+        "Name": {
+          "Fn::Sub": "/awstraining/${env}/VITE_USER_POOL_ID"
+        },
+        "Type": "String",
+        "Value": {
+          "Ref": "UserPool"
+        },
+        "Description": "Cognito User Pool ID for Frontend"
+      }
+    },
+    "AppClientIdSSMParameter": {
+      "Type": "AWS::SSM::Parameter",
+      "Properties": {
+        "Name": {
+          "Fn::Sub": "/awstraining/${env}/VITE_USER_POOL_CLIENT_ID"
+        },
+        "Type": "String",
+        "Value": {
+          "Ref": "UserPoolClient"
+        },
+        "Description": "Cognito User Pool Client ID for Frontend"
+      }
+    },
+    "RegionSSMParameter": {
+      "Type": "AWS::SSM::Parameter",
+      "Properties": {
+        "Name": {
+          "Fn::Sub": "/awstraining/${env}/VITE_AWS_REGION"
+        },
+        "Type": "String",
+        "Value": {
+          "Ref": "AWS::Region"
+        },
+        "Description": "AWS Region for Frontend"
+      }
     }
   },
   "Outputs": {

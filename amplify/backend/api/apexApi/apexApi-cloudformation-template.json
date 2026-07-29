@@ -179,6 +179,19 @@
           "Ref": "env"
         }
       }
+    },
+    "ApiEndpointSSMParameter": {
+      "Type": "AWS::SSM::Parameter",
+      "Properties": {
+        "Name": {
+          "Fn::Sub": "/awstraining/${env}/VITE_API_ENDPOINT"
+        },
+        "Type": "String",
+        "Value": {
+          "Fn::Sub": "https://${RestApi}.execute-api.${AWS::Region}.amazonaws.com/${env}"
+        },
+        "Description": "API Gateway Root URL for Frontend"
+      }
     }
   },
   "Outputs": {

@@ -88,10 +88,9 @@ jobs:
             --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
             --no-fail-on-empty-changeset
 
-      - name: Deploy Cognito Auth Infrastructure & Save SSM Parameters
+      - name: Deploy Cognito Auth Infrastructure (UserPool & SSM Parameters)
         env:
           STAGE: ${{ steps.stage.outputs.STAGE }}
-          AWS_REGION: ${{ secrets.AWS_REGION || 'ap-southeast-2' }}
         run: |
           aws cloudformation deploy \
             --template-file amplify/backend/auth/apexAuth/apexAuth-cloudformation-template.json \
@@ -99,20 +98,6 @@ jobs:
             --parameter-overrides env="${STAGE}" \
             --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
             --no-fail-on-empty-changeset
-
-          USER_POOL_ID=$(aws cloudformation describe-stacks \
-            --stack-name "awstraining-auth-${STAGE}" \
-            --query "Stacks[0].Outputs[?OutputKey=='UserPoolId'].OutputValue" \
-            --output text)
-
-          APP_CLIENT_ID=$(aws cloudformation describe-stacks \
-            --stack-name "awstraining-auth-${STAGE}" \
-            --query "Stacks[0].Outputs[?OutputKey=='AppClientID'].OutputValue" \
-            --output text)
-
-          aws ssm put-parameter --name "/awstraining/${STAGE}/VITE_USER_POOL_ID" --value "$USER_POOL_ID" --type "String" --overwrite
-          aws ssm put-parameter --name "/awstraining/${STAGE}/VITE_USER_POOL_CLIENT_ID" --value "$APP_CLIENT_ID" --type "String" --overwrite
-          aws ssm put-parameter --name "/awstraining/${STAGE}/VITE_AWS_REGION" --value "$AWS_REGION" --type "String" --overwrite
 
       - name: Deploy Producer & Consumer Lambda Stacks
         env:
@@ -132,7 +117,7 @@ jobs:
             --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
             --no-fail-on-empty-changeset
 
-      - name: Deploy REST API Gateway Stack & Save Endpoint to SSM Parameter Store
+      - name: Deploy REST API Gateway Stack (API Gateway & SSM Parameter)
         env:
           STAGE: ${{ steps.stage.outputs.STAGE }}
         run: |
@@ -147,13 +132,6 @@ jobs:
             --parameter-overrides env="${STAGE}" authapexAuthUserPoolId="${USER_POOL_ID}" \
             --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
             --no-fail-on-empty-changeset
-
-          API_URL=$(aws cloudformation describe-stacks \
-            --stack-name "awstraining-api-${STAGE}" \
-            --query "Stacks[0].Outputs[?OutputKey=='RootUrl'].OutputValue" \
-            --output text)
-
-          aws ssm put-parameter --name "/awstraining/${STAGE}/VITE_API_ENDPOINT" --value "$API_URL" --type "String" --overwrite
 
       - name: Update Producer Lambda Code
         env:
