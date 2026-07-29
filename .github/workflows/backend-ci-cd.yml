@@ -1,4 +1,4 @@
-name: Backend Quality Gate & AWS Lambda Deployment
+name: Backend Quality Gate & AWS Deployment
 
 on:
   push:
@@ -26,6 +26,17 @@ jobs:
           node-version: 24
           cache: 'npm'
           cache-dependency-path: backend/package-lock.json
+
+      - name: Determine Environment Stage
+        id: stage
+        run: |
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            echo "STAGE=prod" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref_name }}" = "staging" ]; then
+            echo "STAGE=staging" >> $GITHUB_OUTPUT
+          else
+            echo "STAGE=dev" >> $GITHUB_OUTPUT
+          fi
 
       - name: Install Dependencies
         working-directory: backend
@@ -55,19 +66,25 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION || 'ap-southeast-2' }}
 
       - name: Deploy Producer Lambda
+        env:
+          STAGE: ${{ steps.stage.outputs.STAGE }}
         run: |
-          if aws lambda get-function --function-name PlayerOnboardingProducer 2>/dev/null; then
-            aws lambda update-function-code --function-name PlayerOnboardingProducer --zip-file fileb://backend/dist/producer.zip
-            echo "Successfully updated PlayerOnboardingProducer Lambda code."
+          FUNCTION_NAME="PlayerOnboardingProducer-${STAGE}"
+          if aws lambda get-function --function-name "$FUNCTION_NAME" 2>/dev/null; then
+            aws lambda update-function-code --function-name "$FUNCTION_NAME" --zip-file fileb://backend/dist/producer.zip
+            echo "Successfully updated $FUNCTION_NAME Lambda code."
           else
-            echo "PlayerOnboardingProducer function does not exist on AWS yet. Skipping live code update."
+            echo "$FUNCTION_NAME function does not exist on AWS yet. Skipping live code update."
           fi
 
       - name: Deploy Consumer Lambda
+        env:
+          STAGE: ${{ steps.stage.outputs.STAGE }}
         run: |
-          if aws lambda get-function --function-name PlayerOnboardingConsumer 2>/dev/null; then
-            aws lambda update-function-code --function-name PlayerOnboardingConsumer --zip-file fileb://backend/dist/consumer.zip
-            echo "Successfully updated PlayerOnboardingConsumer Lambda code."
+          FUNCTION_NAME="PlayerOnboardingConsumer-${STAGE}"
+          if aws lambda get-function --function-name "$FUNCTION_NAME" 2>/dev/null; then
+            aws lambda update-function-code --function-name "$FUNCTION_NAME" --zip-file fileb://backend/dist/consumer.zip
+            echo "Successfully updated $FUNCTION_NAME Lambda code."
           else
-            echo "PlayerOnboardingConsumer function does not exist on AWS yet. Skipping live code update."
+            echo "$FUNCTION_NAME function does not exist on AWS yet. Skipping live code update."
           fi

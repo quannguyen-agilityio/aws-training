@@ -31,7 +31,7 @@
             "TABLE_NAME": {
               "Fn::Sub": "ApexPlayers-${env}"
             },
-            "SES_SENDER_EMAIL": "noreply@apexathletes.com"
+            "SES_SENDER_EMAIL": "nquan1007+sesSender@gmail.com"
           }
         },
         "Tags": [
