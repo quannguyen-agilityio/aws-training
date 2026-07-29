@@ -9,11 +9,7 @@
       "name": "/players",
       "lambdaFunction": "producer",
       "privacy": {
-        "open": true,
-        "protected": true,
-        "auth": {
-          "userPoolId": "apexAuth"
-        }
+        "open": true
       }
     },
     {

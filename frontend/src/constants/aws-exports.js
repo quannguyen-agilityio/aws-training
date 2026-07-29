@@ -3,15 +3,15 @@ import { API_URL, AWS_REGION, USER_POOL_ID, USER_POOL_CLIENT_ID } from './config
 const awsConfig = {
   Auth: {
     Cognito: {
-      userPoolId: USER_POOL_ID || 'us-east-1_DEFAULT',
-      userPoolClientId: USER_POOL_CLIENT_ID || 'DEFAULT_CLIENT_ID',
+      userPoolId: USER_POOL_ID,
+      userPoolClientId: USER_POOL_CLIENT_ID,
       signUpVerificationMethod: 'code',
     },
   },
   API: {
     REST: {
       apexApi: {
-        endpoint: API_URL || 'https://pexoimesc4.execute-api.ap-southeast-2.amazonaws.com/develop',
+        endpoint: API_URL,
         region: AWS_REGION,
       },
     },
