@@ -65,39 +65,83 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION || 'ap-southeast-2' }}
 
-      - name: Install Amplify CLI & Deploy CloudFormation Infrastructure
+      - name: Deploy Storage & Messaging Infrastructure (DynamoDB, SQS, SNS)
         env:
           STAGE: ${{ steps.stage.outputs.STAGE }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION || 'ap-southeast-2' }}
         run: |
-          npm install -g @aws-amplify/cli
-          AMPLIFY="{\"projectName\":\"awstraining\",\"envName\":\"${STAGE}\",\"defaultEditor\":\"none\"}"
-          PROVIDERS="{\"awscloudformation\":{\"configLevel\":\"project\",\"useProfile\":false,\"accessKeyId\":\"${AWS_ACCESS_KEY_ID}\",\"secretAccessKey\":\"${AWS_SECRET_ACCESS_KEY}\",\"region\":\"${AWS_REGION}\"}}"
-          amplify init --amplify "$AMPLIFY" --providers "$PROVIDERS" --yes
-          amplify push --yes
+          aws cloudformation deploy \
+            --template-file amplify/backend/custom/storageMessaging/storageMessaging-cloudformation-template.json \
+            --stack-name "awstraining-storageMessaging-${STAGE}" \
+            --parameter-overrides env="${STAGE}" \
+            --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
+            --no-fail-on-empty-changeset
 
-      - name: Deploy Producer Lambda
+      - name: Deploy IAM Execution Roles
+        env:
+          STAGE: ${{ steps.stage.outputs.STAGE }}
+        run: |
+          aws cloudformation deploy \
+            --template-file amplify/backend/custom/iam/iam-cloudformation-template.json \
+            --stack-name "awstraining-iam-${STAGE}" \
+            --parameter-overrides env="${STAGE}" \
+            --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
+            --no-fail-on-empty-changeset
+
+      - name: Deploy Cognito Auth Infrastructure
+        env:
+          STAGE: ${{ steps.stage.outputs.STAGE }}
+        run: |
+          aws cloudformation deploy \
+            --template-file amplify/backend/auth/apexAuth/apexAuth-cloudformation-template.json \
+            --stack-name "awstraining-auth-${STAGE}" \
+            --parameter-overrides env="${STAGE}" \
+            --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
+            --no-fail-on-empty-changeset
+
+      - name: Deploy Producer & Consumer Lambda Stacks
+        env:
+          STAGE: ${{ steps.stage.outputs.STAGE }}
+        run: |
+          aws cloudformation deploy \
+            --template-file amplify/backend/function/producer/producer-cloudformation-template.json \
+            --stack-name "awstraining-producer-${STAGE}" \
+            --parameter-overrides env="${STAGE}" \
+            --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
+            --no-fail-on-empty-changeset
+
+          aws cloudformation deploy \
+            --template-file amplify/backend/function/consumer/consumer-cloudformation-template.json \
+            --stack-name "awstraining-consumer-${STAGE}" \
+            --parameter-overrides env="${STAGE}" \
+            --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
+            --no-fail-on-empty-changeset
+
+      - name: Deploy REST API Gateway Stack
+        env:
+          STAGE: ${{ steps.stage.outputs.STAGE }}
+        run: |
+          USER_POOL_ID=$(aws cloudformation describe-stacks \
+            --stack-name "awstraining-auth-${STAGE}" \
+            --query "Stacks[0].Outputs[?OutputKey=='UserPoolId'].OutputValue" \
+            --output text)
+
+          aws cloudformation deploy \
+            --template-file amplify/backend/api/apexApi/apexApi-cloudformation-template.json \
+            --stack-name "awstraining-api-${STAGE}" \
+            --parameter-overrides env="${STAGE}" authapexAuthUserPoolId="${USER_POOL_ID}" \
+            --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
+            --no-fail-on-empty-changeset
+
+      - name: Update Producer Lambda Code
         env:
           STAGE: ${{ steps.stage.outputs.STAGE }}
         run: |
           FUNCTION_NAME="PlayerOnboardingProducer-${STAGE}"
-          if aws lambda get-function --function-name "$FUNCTION_NAME" 2>/dev/null; then
-            aws lambda update-function-code --function-name "$FUNCTION_NAME" --zip-file fileb://backend/dist/producer.zip
-            echo "Successfully updated $FUNCTION_NAME Lambda code."
-          else
-            echo "$FUNCTION_NAME function does not exist on AWS yet. Skipping live code update."
-          fi
+          aws lambda update-function-code --function-name "$FUNCTION_NAME" --zip-file fileb://backend/dist/producer.zip
 
-      - name: Deploy Consumer Lambda
+      - name: Update Consumer Lambda Code
         env:
           STAGE: ${{ steps.stage.outputs.STAGE }}
         run: |
           FUNCTION_NAME="PlayerOnboardingConsumer-${STAGE}"
-          if aws lambda get-function --function-name "$FUNCTION_NAME" 2>/dev/null; then
-            aws lambda update-function-code --function-name "$FUNCTION_NAME" --zip-file fileb://backend/dist/consumer.zip
-            echo "Successfully updated $FUNCTION_NAME Lambda code."
-          else
-            echo "$FUNCTION_NAME function does not exist on AWS yet. Skipping live code update."
-          fi
+          aws lambda update-function-code --function-name "$FUNCTION_NAME" --zip-file fileb://backend/dist/consumer.zip
