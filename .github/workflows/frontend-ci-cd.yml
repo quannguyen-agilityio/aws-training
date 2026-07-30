@@ -1,0 +1,127 @@
+# ==============================================================================
+# GITHUB ACTIONS WORKFLOW: FRONTEND CI/CD (ISOLATED PATH DEPLOYMENT)
+# ==============================================================================
+# SEPARATION OF DEPLOYMENT:
+# This workflow is strictly isolated to frontend changes. It triggers ONLY when
+# code changes occur within `frontend/**` or this workflow file.
+# Backend code changes in `backend/**` or `amplify/**` will NOT trigger this pipeline.
+# ==============================================================================
+
+name: Frontend Quality Gate & Web Deployment
+
+on:
+  push:
+    branches:
+      - develop
+      - staging
+      - main
+    paths:
+      # FRONTEND PATH FILTERING: Only run when frontend files change
+      - 'frontend/**'
+      - '.github/workflows/frontend-ci-cd.yml'
+
+jobs:
+  quality-gate-and-deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref_name }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Determine Environment Stage
+        id: stage
+        run: |
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            echo "STAGE=prod" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref_name }}" = "staging" ]; then
+            echo "STAGE=staging" >> $GITHUB_OUTPUT
+          else
+            echo "STAGE=dev" >> $GITHUB_OUTPUT
+          fi
+
+      # ------------------------------------------------------------------------
+      # STEP 1: Frontend Quality Gate (Install, Lint, Build)
+      # ------------------------------------------------------------------------
+      - name: Install Frontend Dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Lint Frontend Code
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION || 'ap-southeast-2' }}
+
+      - name: Fetch Environment SSM Parameters for Frontend Build
+        env:
+          STAGE: ${{ steps.stage.outputs.STAGE }}
+        run: |
+          echo "Fetching SSM Parameters for Stage: [${STAGE}]..."
+          FETCHED_API_URL=$(aws ssm get-parameter --name "/awstraining/${STAGE}/VITE_API_ENDPOINT" --query "Parameter.Value" --output text 2>&1 || echo "")
+          FETCHED_REGION=$(aws ssm get-parameter --name "/awstraining/${STAGE}/VITE_AWS_REGION" --query "Parameter.Value" --output text 2>&1 || echo "ap-southeast-2")
+          FETCHED_USER_POOL_ID=$(aws ssm get-parameter --name "/awstraining/${STAGE}/VITE_USER_POOL_ID" --query "Parameter.Value" --output text 2>&1 || echo "")
+          FETCHED_USER_POOL_CLIENT_ID=$(aws ssm get-parameter --name "/awstraining/${STAGE}/VITE_USER_POOL_CLIENT_ID" --query "Parameter.Value" --output text 2>&1 || echo "")
+
+          case "$FETCHED_API_URL" in
+            http*) echo "VITE_API_ENDPOINT=$FETCHED_API_URL" >> $GITHUB_ENV ;;
+            *) echo "Warning: SSM API_URL fetch output: $FETCHED_API_URL" ;;
+          esac
+
+          case "$FETCHED_USER_POOL_ID" in
+            *_) echo "VITE_USER_POOL_ID=$FETCHED_USER_POOL_ID" >> $GITHUB_ENV ;;
+            *) echo "Warning: SSM USER_POOL_ID fetch output: $FETCHED_USER_POOL_ID" ;;
+          esac
+
+          if [ -n "$FETCHED_USER_POOL_CLIENT_ID" ] && [[ "$FETCHED_USER_POOL_CLIENT_ID" != *"An error occurred"* ]]; then
+            echo "VITE_USER_POOL_CLIENT_ID=$FETCHED_USER_POOL_CLIENT_ID" >> $GITHUB_ENV
+          fi
+
+          echo "VITE_AWS_REGION=$FETCHED_REGION" >> $GITHUB_ENV
+
+      - name: Build Frontend Application
+        working-directory: frontend
+        run: npm run build
+
+      # ------------------------------------------------------------------------
+      # STEP 2: Deploy Built Frontend Bundle directly to AWS Amplify Hosting
+      # ------------------------------------------------------------------------
+      - name: Deploy Frontend Pre-built Bundle to AWS Amplify Hosting
+        env:
+          STAGE: ${{ steps.stage.outputs.STAGE }}
+          AWS_APP_ID: ${{ secrets.AMPLIFY_APP_ID }}
+        run: |
+          echo "================================================================="
+          echo "FRONTEND DEPLOYMENT: Deploying pre-built dist assets to Stage [${STAGE}]"
+          echo "================================================================="
+          if [ -n "$AWS_APP_ID" ]; then
+            cd frontend/dist
+            zip -r ../../deploy.zip .
+            cd ../..
+
+            echo "Creating Amplify Deployment for App ID: $AWS_APP_ID, Branch: ${STAGE}..."
+            DEPLOYMENT_RESPONSE=$(aws amplify create-deployment --app-id "$AWS_APP_ID" --branch-name "${STAGE}")
+            ZIP_URL=$(echo "$DEPLOYMENT_RESPONSE" | jq -r '.zipUploadUrl')
+            JOB_ID=$(echo "$DEPLOYMENT_RESPONSE" | jq -r '.jobId')
+
+            echo "Uploading deploy.zip package to AWS Amplify Hosting..."
+            curl -H "Content-Type: application/zip" --upload-file deploy.zip "$ZIP_URL"
+
+            echo "Triggering AWS Amplify Start-Deployment Job ID: $JOB_ID..."
+            aws amplify start-deployment --app-id "$AWS_APP_ID" --branch-name "${STAGE}" --job-id "$JOB_ID"
+            echo "Successfully deployed frontend bundle to AWS Amplify Hosting."
+          else
+            echo "AMPLIFY_APP_ID secret not set. Static assets compiled in frontend/dist successfully."
+          fi

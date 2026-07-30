@@ -1,3 +1,12 @@
+/**
+ * ============================================================================
+ * AMPLIFY GEN 2 - FRONTEND CLIENT CONFIGURATION
+ * ============================================================================
+ * Defines the configuration object passed to `Amplify.configure()` for Amplify Gen 2.
+ * Integrates Cognito Auth credentials and REST API Gateway endpoints synthesized
+ * by Amplify Gen 2 backend stack.
+ */
+
 import { API_URL, AWS_REGION, USER_POOL_ID, USER_POOL_CLIENT_ID } from './config.js';
 
 const awsConfig = {

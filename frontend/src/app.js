@@ -7,7 +7,10 @@ import { showToast } from '@utils/toast.util.js';
 import { checkAuthSession, loginUser, logoutUser } from '@utils/auth.util.js';
 import { fetchPlayers, savePlayerRecord, deletePlayerRecord } from '@services/player.service.js';
 
-// Initialize Amplify
+// ============================================================================
+// AMPLIFY GEN 2 CLIENT INITIALIZATION
+// ============================================================================
+// Configure Amplify Gen 2 client SDK with synthesized Cognito Auth and API Gateway endpoints
 Amplify.configure(awsConfig);
 
 // Application State
