@@ -27,7 +27,11 @@ export const backend = defineBackend({
 
 // Initialize Custom Infrastructure Stack
 const customStack = backend.createStack('CustomInfrastructureStack');
-const env = customStack.node.tryGetContext('env') || 'dev';
+
+// Determine environment stage: Ensure sandbox stack does not conflict with branch deployments (develop/staging/prod)
+const explicitEnv = customStack.node.tryGetContext('env');
+const isSandbox = cdk.Stack.of(customStack).stackName.includes('sandbox');
+const env = isSandbox ? 'sandbox' : (explicitEnv || 'dev');
 const region = cdk.Stack.of(customStack).region;
 
 // 1. Provision Storage Resources (DynamoDB Table)
