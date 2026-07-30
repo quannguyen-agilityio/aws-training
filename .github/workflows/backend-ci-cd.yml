@@ -100,6 +100,7 @@ jobs:
           echo "================================================================="
           echo "DEPLOYING BACKEND INFRASTRUCTURE STACK FOR STAGE: [${STAGE}]"
           echo "================================================================="
+          npx cdk bootstrap
           npx cdk deploy --all -c env="${STAGE}" --require-approval never
 
       # ------------------------------------------------------------------------
