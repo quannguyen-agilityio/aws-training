@@ -93,13 +93,14 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION || 'ap-southeast-2' }}
 
       - name: Deploy Backend Infrastructure Stack (AWS CDK)
+        working-directory: amplify
         env:
           STAGE: ${{ steps.stage.outputs.STAGE }}
         run: |
           echo "================================================================="
           echo "DEPLOYING BACKEND INFRASTRUCTURE STACK FOR STAGE: [${STAGE}]"
           echo "================================================================="
-          npx --prefix amplify cdk deploy --all -c env="${STAGE}" --require-approval never
+          npx cdk deploy --all -c env="${STAGE}" --require-approval never
 
       # ------------------------------------------------------------------------
       # STEP 3: Update Producer and Consumer Lambda Function Code

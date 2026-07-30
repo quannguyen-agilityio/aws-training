@@ -7,6 +7,8 @@ dist/
 coverage/
 *.lcov
 *.zip
+cdk.out/
+**/cdk.out/
 
 # Local env files
 .env
