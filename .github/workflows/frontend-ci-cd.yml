@@ -70,26 +70,41 @@ jobs:
           STAGE: ${{ steps.stage.outputs.STAGE }}
         run: |
           echo "Fetching SSM Parameters for Stage: [${STAGE}]..."
-          FETCHED_API_URL=$(aws ssm get-parameter --name "/awstraining/${STAGE}/VITE_API_ENDPOINT" --query "Parameter.Value" --output text 2>&1 || echo "")
-          FETCHED_REGION=$(aws ssm get-parameter --name "/awstraining/${STAGE}/VITE_AWS_REGION" --query "Parameter.Value" --output text 2>&1 || echo "ap-southeast-2")
-          FETCHED_USER_POOL_ID=$(aws ssm get-parameter --name "/awstraining/${STAGE}/VITE_USER_POOL_ID" --query "Parameter.Value" --output text 2>&1 || echo "")
-          FETCHED_USER_POOL_CLIENT_ID=$(aws ssm get-parameter --name "/awstraining/${STAGE}/VITE_USER_POOL_CLIENT_ID" --query "Parameter.Value" --output text 2>&1 || echo "")
 
-          case "$FETCHED_API_URL" in
-            http*) echo "VITE_API_ENDPOINT=$FETCHED_API_URL" >> $GITHUB_ENV ;;
-            *) echo "Warning: SSM API_URL fetch output: $FETCHED_API_URL" ;;
-          esac
+          # Safe SSM Parameter Fetch Helper (Redirect Stderr to /dev/null to prevent GITHUB_ENV pollution)
+          get_param() {
+            aws ssm get-parameter --name "$1" --query "Parameter.Value" --output text 2>/dev/null || echo ""
+          }
 
-          case "$FETCHED_USER_POOL_ID" in
-            *_) echo "VITE_USER_POOL_ID=$FETCHED_USER_POOL_ID" >> $GITHUB_ENV ;;
-            *) echo "Warning: SSM USER_POOL_ID fetch output: $FETCHED_USER_POOL_ID" ;;
-          esac
+          FETCHED_API_URL=$(get_param "/awstraining/${STAGE}/VITE_API_ENDPOINT")
+          FETCHED_REGION=$(get_param "/awstraining/${STAGE}/VITE_AWS_REGION")
+          FETCHED_USER_POOL_ID=$(get_param "/awstraining/${STAGE}/VITE_USER_POOL_ID")
+          FETCHED_USER_POOL_CLIENT_ID=$(get_param "/awstraining/${STAGE}/VITE_USER_POOL_CLIENT_ID")
 
-          if [ -n "$FETCHED_USER_POOL_CLIENT_ID" ] && [[ "$FETCHED_USER_POOL_CLIENT_ID" != *"An error occurred"* ]]; then
-            echo "VITE_USER_POOL_CLIENT_ID=$FETCHED_USER_POOL_CLIENT_ID" >> $GITHUB_ENV
+          # Validate and set VITE_API_ENDPOINT
+          if [[ "$FETCHED_API_URL" =~ ^http ]]; then
+            echo "VITE_API_ENDPOINT=$FETCHED_API_URL" >> $GITHUB_ENV
+            echo " - VITE_API_ENDPOINT set from SSM: $FETCHED_API_URL"
           fi
 
-          echo "VITE_AWS_REGION=$FETCHED_REGION" >> $GITHUB_ENV
+          # Validate and set VITE_USER_POOL_ID
+          if [[ "$FETCHED_USER_POOL_ID" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+            echo "VITE_USER_POOL_ID=$FETCHED_USER_POOL_ID" >> $GITHUB_ENV
+            echo " - VITE_USER_POOL_ID set from SSM: $FETCHED_USER_POOL_ID"
+          fi
+
+          # Validate and set VITE_USER_POOL_CLIENT_ID
+          if [[ "$FETCHED_USER_POOL_CLIENT_ID" =~ ^[a-zA-Z0-9]+$ ]]; then
+            echo "VITE_USER_POOL_CLIENT_ID=$FETCHED_USER_POOL_CLIENT_ID" >> $GITHUB_ENV
+            echo " - VITE_USER_POOL_CLIENT_ID set from SSM: $FETCHED_USER_POOL_CLIENT_ID"
+          fi
+
+          # Safe fallback for VITE_AWS_REGION
+          if [[ "$FETCHED_REGION" =~ ^[a-z0-9-]+$ ]]; then
+            echo "VITE_AWS_REGION=$FETCHED_REGION" >> $GITHUB_ENV
+          else
+            echo "VITE_AWS_REGION=${{ secrets.AWS_REGION || 'ap-southeast-2' }}" >> $GITHUB_ENV
+          fi
 
       - name: Build Frontend Application
         working-directory: frontend

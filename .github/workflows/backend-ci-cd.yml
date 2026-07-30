@@ -78,7 +78,7 @@ jobs:
       # ------------------------------------------------------------------------
       - name: Install Amplify Gen 2 Infrastructure Dependencies
         working-directory: amplify
-        run: npm ci
+        run: npm ci --legacy-peer-deps || npm install --legacy-peer-deps
 
       - name: Typecheck Amplify Gen 2 Backend Definitions
         working-directory: amplify
