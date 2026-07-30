@@ -36,15 +36,19 @@ jobs:
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Determine Environment Stage
+      - name: Map Git Branch to Environment Stage & Amplify Branch Name
         id: stage
         run: |
           if [ "${{ github.ref_name }}" = "main" ]; then
             echo "STAGE=prod" >> $GITHUB_OUTPUT
+            echo "AMPLIFY_BRANCH=prod" >> $GITHUB_OUTPUT
           elif [ "${{ github.ref_name }}" = "staging" ]; then
             echo "STAGE=staging" >> $GITHUB_OUTPUT
+            echo "AMPLIFY_BRANCH=staging" >> $GITHUB_OUTPUT
           else
-            echo "STAGE=dev" >> $GITHUB_OUTPUT
+            # develop branch maps directly to develop stage and develop branch on Amplify
+            echo "STAGE=develop" >> $GITHUB_OUTPUT
+            echo "AMPLIFY_BRANCH=develop" >> $GITHUB_OUTPUT
           fi
 
       # ------------------------------------------------------------------------
@@ -116,18 +120,22 @@ jobs:
       - name: Deploy Frontend Pre-built Bundle to AWS Amplify Hosting
         env:
           STAGE: ${{ steps.stage.outputs.STAGE }}
+          TARGET_BRANCH: ${{ steps.stage.outputs.AMPLIFY_BRANCH }}
           AWS_APP_ID: ${{ secrets.AMPLIFY_APP_ID }}
         run: |
           echo "================================================================="
-          echo "FRONTEND DEPLOYMENT: Deploying pre-built dist assets to Stage [${STAGE}]"
+          echo "FRONTEND DEPLOYMENT: Stage [${STAGE}], Target Amplify Branch [${TARGET_BRANCH}]"
           echo "================================================================="
           if [ -n "$AWS_APP_ID" ]; then
             cd frontend/dist
             zip -r ../../deploy.zip .
             cd ../..
 
-            echo "Creating Amplify Deployment for App ID: $AWS_APP_ID, Branch: ${STAGE}..."
-            DEPLOYMENT_RESPONSE=$(aws amplify create-deployment --app-id "$AWS_APP_ID" --branch-name "${STAGE}")
+            echo "Ensuring branch '$TARGET_BRANCH' exists in AWS Amplify Console App ID: $AWS_APP_ID..."
+            aws amplify create-branch --app-id "$AWS_APP_ID" --branch-name "$TARGET_BRANCH" 2>/dev/null || true
+
+            echo "Creating deployment for App ID: $AWS_APP_ID, Branch: $TARGET_BRANCH..."
+            DEPLOYMENT_RESPONSE=$(aws amplify create-deployment --app-id "$AWS_APP_ID" --branch-name "$TARGET_BRANCH")
             ZIP_URL=$(echo "$DEPLOYMENT_RESPONSE" | jq -r '.zipUploadUrl')
             JOB_ID=$(echo "$DEPLOYMENT_RESPONSE" | jq -r '.jobId')
 
@@ -135,8 +143,8 @@ jobs:
             curl -H "Content-Type: application/zip" --upload-file deploy.zip "$ZIP_URL"
 
             echo "Triggering AWS Amplify Start-Deployment Job ID: $JOB_ID..."
-            aws amplify start-deployment --app-id "$AWS_APP_ID" --branch-name "${STAGE}" --job-id "$JOB_ID"
-            echo "Successfully deployed frontend bundle to AWS Amplify Hosting."
+            aws amplify start-deployment --app-id "$AWS_APP_ID" --branch-name "$TARGET_BRANCH" --job-id "$JOB_ID"
+            echo "Successfully deployed frontend bundle to AWS Amplify Hosting on branch [$TARGET_BRANCH]."
           else
             echo "AMPLIFY_APP_ID secret not set. Static assets compiled in frontend/dist successfully."
           fi
