@@ -1,13 +1,13 @@
 # ==============================================================================
-# GITHUB ACTIONS WORKFLOW: BACKEND CI/CD (AMPLIFY GEN 2)
+# GITHUB ACTIONS WORKFLOW: BACKEND CI/CD (AWS CDK INFRASTRUCTURE & LAMBDAS)
 # ==============================================================================
 # SEPARATION OF DEPLOYMENT:
 # This workflow is strictly isolated to backend changes. It triggers ONLY when
 # code changes occur within `backend/**`, `amplify/**`, or this workflow file.
-# Frontend code changes in `frontend/**` will NOT trigger this pipeline.
+# Frontend web app code changes in `frontend/**` will NOT trigger this pipeline.
 # ==============================================================================
 
-name: Backend Quality Gate & Amplify Gen 2 AWS Deployment
+name: Backend Quality Gate & AWS Infrastructure Deployment
 
 on:
   push:
@@ -16,7 +16,7 @@ on:
       - staging
       - main
     paths:
-      # AMPLIFY GEN 2 PATH FILTERING: Only run when backend or amplify files change
+      # BACKEND PATH FILTERING: Only run when backend or amplify files change
       - 'backend/**'
       - 'amplify/**'
       - '.github/workflows/backend-ci-cd.yml'
@@ -39,19 +39,16 @@ jobs:
             backend/package-lock.json
             amplify/package.json
 
-      - name: Map Git Branch to Environment Stage & Amplify Branch Name
+      - name: Map Git Branch to Environment Stage Name
         id: stage
         run: |
           if [ "${{ github.ref_name }}" = "main" ]; then
             echo "STAGE=prod" >> $GITHUB_OUTPUT
-            echo "AMPLIFY_BRANCH=prod" >> $GITHUB_OUTPUT
           elif [ "${{ github.ref_name }}" = "staging" ]; then
             echo "STAGE=staging" >> $GITHUB_OUTPUT
-            echo "AMPLIFY_BRANCH=staging" >> $GITHUB_OUTPUT
           else
-            # develop branch maps directly to develop stage and develop branch on Amplify
+            # develop branch maps directly to develop stage
             echo "STAGE=develop" >> $GITHUB_OUTPUT
-            echo "AMPLIFY_BRANCH=develop" >> $GITHUB_OUTPUT
           fi
 
       # ------------------------------------------------------------------------
@@ -78,13 +75,13 @@ jobs:
         run: npm run build
 
       # ------------------------------------------------------------------------
-      # STEP 2: Amplify Gen 2 Backend Infrastructure Quality Gate & Deployment
+      # STEP 2: Deploy AWS Backend Infrastructure Stack (DynamoDB, SQS, SNS, IAM, API)
       # ------------------------------------------------------------------------
       - name: Install Amplify Gen 2 Infrastructure Dependencies
         working-directory: amplify
         run: npm ci --legacy-peer-deps || npm install --legacy-peer-deps
 
-      - name: Typecheck Amplify Gen 2 Backend Definitions
+      - name: Typecheck Amplify Gen 2 Infrastructure Definitions
         working-directory: amplify
         run: npm run typecheck
 
@@ -95,27 +92,17 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION || 'ap-southeast-2' }}
 
-      - name: Deploy Amplify Gen 2 Backend Infrastructure
+      - name: Deploy Backend Infrastructure Stack (AWS CDK)
         env:
           STAGE: ${{ steps.stage.outputs.STAGE }}
-          TARGET_BRANCH: ${{ steps.stage.outputs.AMPLIFY_BRANCH }}
-          AWS_APP_ID: ${{ secrets.AMPLIFY_APP_ID }}
         run: |
           echo "================================================================="
-          echo "AMPLIFY GEN 2 DEPLOYMENT: Stage [${STAGE}], Amplify Branch [${TARGET_BRANCH}]"
+          echo "DEPLOYING BACKEND INFRASTRUCTURE STACK FOR STAGE: [${STAGE}]"
           echo "================================================================="
-          if [ -n "$AWS_APP_ID" ]; then
-            echo "Ensuring branch '$TARGET_BRANCH' exists in AWS Amplify Console App ID: $AWS_APP_ID..."
-            aws amplify create-branch --app-id "$AWS_APP_ID" --branch-name "$TARGET_BRANCH" 2>/dev/null || true
-
-            npx --prefix amplify ampx pipeline-deploy --branch "$TARGET_BRANCH" --app-id "$AWS_APP_ID"
-          else
-            echo "AMPLIFY_APP_ID secret not set. Synthesizing & deploying Amplify Gen 2 CDK stack directly..."
-            npx --prefix amplify cdk synth -c env="${STAGE}" || true
-          fi
+          npx --prefix amplify cdk deploy --all -c env="${STAGE}" --require-approval never
 
       # ------------------------------------------------------------------------
-      # STEP 3: Update Lambda Function Source Code Zips
+      # STEP 3: Update Producer and Consumer Lambda Function Code
       # ------------------------------------------------------------------------
       - name: Update Producer Lambda Function Code
         env:
