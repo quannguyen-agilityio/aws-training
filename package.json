@@ -25,6 +25,7 @@
   "devDependencies": {
     "@aws-amplify/backend": "^1.24.0",
     "@aws-amplify/backend-cli": "^1.9.0",
+    "@opentelemetry/core": "^2.10.0",
     "@types/node": "^26.2.0",
     "@types/react": "^18.3.31",
     "@types/react-dom": "^18.3.7",
@@ -46,5 +47,8 @@
     "aws-amplify": "^6.20.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
+  },
+  "overrides": {
+    "@opentelemetry/core": "$@opentelemetry/core"
   }
 }
