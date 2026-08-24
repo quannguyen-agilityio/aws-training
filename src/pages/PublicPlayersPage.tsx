@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { fetchAuthSession } from 'aws-amplify/auth';
 import { Player } from '../types/player';
 import { dataClient } from '../services/amplifyClient';
 import { PlayerGrid } from '../components/public/PlayerGrid';
@@ -8,7 +9,7 @@ import { LoadingSpinner } from '../components/common/LoadingSpinner';
 /**
  * PublicPlayersPage Component
  * Main public view that subscribes to real-time player catalog updates from AWS AppSync / DynamoDB.
- * Allows guest users to filter and search player records without requiring sign-in.
+ * Allows guest users and logged-in admins to filter and search player records without authorization failures.
  */
 export const PublicPlayersPage: React.FC = () => {
   const [players, setPlayers] = useState<Player[]>([]);
@@ -18,20 +19,49 @@ export const PublicPlayersPage: React.FC = () => {
   const [selectedPosition, setSelectedPosition] = useState<string>('ALL');
 
   useEffect(() => {
-    // Subscribe to live player data updates from AWS AppSync / DynamoDB
-    const sub = dataClient.models.Player.observeQuery().subscribe({
-      next: (data) => {
-        setPlayers([...data.items] as Player[]);
-        setLoading(false);
-      },
-      error: (err: unknown) => {
-        console.error('Error fetching player catalog:', err);
-        setError('Failed to load player catalog.');
-        setLoading(false);
-      },
-    });
+    let isMounted = true;
+    let sub: { unsubscribe: () => void } | null = null;
 
-    return () => sub.unsubscribe();
+    const setupSubscription = async () => {
+      try {
+        const session = await fetchAuthSession();
+        // Dynamically select authMode: 'userPool' if logged in as Admin, otherwise 'identityPool' for guests
+        const authMode = session.tokens ? 'userPool' : 'identityPool';
+
+        if (!isMounted) return;
+
+        sub = dataClient.models.Player.observeQuery({
+          authMode,
+        }).subscribe({
+          next: (data) => {
+            if (isMounted) {
+              setPlayers([...data.items] as Player[]);
+              setLoading(false);
+            }
+          },
+          error: (err: unknown) => {
+            console.error('Error fetching player catalog:', err);
+            if (isMounted) {
+              setError('Failed to load player catalog.');
+              setLoading(false);
+            }
+          },
+        });
+      } catch (err) {
+        console.error('Error resolving auth session for catalog:', err);
+        if (isMounted) {
+          setError('Failed to load player catalog.');
+          setLoading(false);
+        }
+      }
+    };
+
+    setupSubscription();
+
+    return () => {
+      isMounted = false;
+      if (sub) sub.unsubscribe();
+    };
   }, []);
 
   // Compute array of unique position strings for filter dropdown
