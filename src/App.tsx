@@ -5,7 +5,7 @@ import {
   formatJerseyNumber,
   formatTeamName,
   getPlayerAvatarUrl,
-} from './utils/playerUtils';
+} from './utils/formatters';
 import './App.css';
 
 // Initialize the AWS Amplify Gen 2 Data Client with schema type safety

@@ -1,9 +1,6 @@
 /**
- * Utility functions for player data formatting and default fallback generation.
- */
-
-/**
- * Format a jersey number for display (e.g., "#10" or "N/A").
+ * Format jersey number for UI display.
+ * Returns '#<number>' if provided, or 'N/A' if null/undefined.
  */
 export const formatJerseyNumber = (jerseyNumber?: number | null): string => {
   if (jerseyNumber === undefined || jerseyNumber === null) {
@@ -13,13 +10,14 @@ export const formatJerseyNumber = (jerseyNumber?: number | null): string => {
 };
 
 /**
- * Format team name for display (e.g., "Free Agent" if unassigned).
+ * Format team name for UI display.
+ * Returns the trimmed team name, or 'Free Agent' if unassigned/empty.
  */
 export const formatTeamName = (team?: string | null): string => {
-  if (!team || !team.trim()) {
+  if (!team || team.trim() === '') {
     return 'Free Agent';
   }
-  return team.trim();
+  return team;
 };
 
 /**
@@ -34,3 +32,4 @@ export const getPlayerAvatarUrl = (
   }
   return `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name || 'player')}`;
 };
+
