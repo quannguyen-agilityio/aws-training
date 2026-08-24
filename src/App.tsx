@@ -1,11 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../amplify/data/resource';
-import {
-  formatJerseyNumber,
-  formatTeamName,
-  getPlayerAvatarUrl,
-} from './utils/formatters';
+import { formatJerseyNumber, formatTeamName } from './utils/formatters';
 import './App.css';
 
 // Initialize the AWS Amplify Gen 2 Data Client with schema type safety
@@ -308,11 +304,15 @@ export default function App() {
                 <div className='jersey-badge'>
                   {formatJerseyNumber(player.jerseyNumber)}
                 </div>
-                <img
-                  src={getPlayerAvatarUrl(player.name, player.avatarUrl)}
-                  alt={player.name}
-                  className='player-avatar'
-                />
+                {player.avatarUrl ? (
+                  <img
+                    src={player.avatarUrl}
+                    alt={player.name}
+                    className='player-avatar'
+                  />
+                ) : (
+                  <div className='player-avatar default-avatar-icon'>👤</div>
+                )}
                 <div className='player-details'>
                   <h3 className='player-name'>{player.name}</h3>
                   <span className='player-position'>{player.position}</span>

@@ -20,16 +20,4 @@ export const formatTeamName = (team?: string | null): string => {
   return team;
 };
 
-/**
- * Generate a deterministic avatar URL for a player using DiceBear API if avatarUrl is missing.
- */
-export const getPlayerAvatarUrl = (
-  name: string,
-  avatarUrl?: string | null,
-): string => {
-  if (avatarUrl && avatarUrl.trim()) {
-    return avatarUrl.trim();
-  }
-  return `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name || 'player')}`;
-};
 
