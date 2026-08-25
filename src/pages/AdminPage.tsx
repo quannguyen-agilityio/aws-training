@@ -18,10 +18,7 @@ import { LoadingSpinner } from '../components/common/LoadingSpinner';
  * Rendered only after successful authentication via Authenticator.
  * Subscribes to live player data updates using userPool auth mode.
  */
-const AdminContent: React.FC<{ signOut?: () => void; user?: any }> = ({
-  signOut,
-  user,
-}) => {
+const AdminContent: React.FC<{ signOut?: () => void }> = ({ signOut }) => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
@@ -87,10 +84,6 @@ const AdminContent: React.FC<{ signOut?: () => void; user?: any }> = ({
       <header className='admin-header'>
         <div>
           <h2>🔐 Admin Management Portal</h2>
-          <p className='welcome-text'>
-            Welcome back,{' '}
-            <strong>{user?.username || user?.signInDetails?.loginId}</strong>
-          </p>
         </div>
         <button className='signout-btn' onClick={signOut}>
           Sign Out 👋
@@ -132,7 +125,7 @@ export const AdminPage: React.FC = () => {
   return (
     <div className='page-container admin-container'>
       <Authenticator>
-        {({ signOut, user }) => <AdminContent signOut={signOut} user={user} />}
+        {({ signOut }) => <AdminContent signOut={signOut} />}
       </Authenticator>
     </div>
   );
